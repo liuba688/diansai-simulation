@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# CCS / Make build products
+project/MSPM0G3507_Car/project/ccs/build/
+**/Debug/
+**/Release/
+
+# Keil build products. Some legacy artifacts are already tracked upstream;
+# this prevents newly generated files from being added.
+**/Objects/
+**/Listings/
+
+# Local diagnostic workspaces created while validating the CCS project
+tmp/build/
+tmp/ccs_help_workspace/
+tmp/ccs_help_workspace_build/
+tmp/ccs_workspace_ball_car/
+tmp/ccs_workspace_existing_test/
+tmp/ccs_workspace_existing_test2/
+tmp/pdfs/ti_final_board_20260727/

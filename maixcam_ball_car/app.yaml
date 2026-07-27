@@ -1,0 +1,16 @@
+id: maixcam_ball_car
+name: Ball Car Vision
+name[zh]: 寻球小车视觉
+version: 0.1.0
+author: diansai
+desc: Steel-ball detection and UART guidance for the MSPM0 line-following car
+desc[zh]: 钢珠识别、目标锁定并通过 UART 引导 MSPM0 循迹小车
+files:
+  - main.py
+  - config.py
+  - ball_tracker.py
+  - vision_protocol.py
+  - vision_uart.py
+  - README.md
+  - steel_ball_320_v2.mud
+  - steel_ball_320_v2.cvimodel

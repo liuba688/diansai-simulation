@@ -6,8 +6,8 @@
 
 ## 1. 信息来源与使用规则
 
-- **网络连接唯一依据**：`D:\ai embody\TI preparation\PCB\TI板卡\原理图文件\SCH_Schematic1_2026-06-13.pdf`
-- **PCB 成品资料**：`D:\ai embody\TI preparation\PCB\TI板卡\Gerber2\10.zip`
+- **网络连接唯一依据**：`D:\diansai\following_new\PCB\TI板卡\原理图文件\SCH_Schematic1_2026-06-13.pdf`
+- **PCB 成品资料**：`D:\diansai\following_new\PCB\TI板卡\Gerber2\10.zip`
 - **工程引脚限制**：各工程下的 `project\尽量不要使用的引脚.txt`
 - **实机修正优先级**：实机测量/已验证结果 > 2026-06-13 原理图 > 本文 > Gerber 丝印推断。
 - 插头方向必须以 PCB 方形焊盘、数字 `1` 或连接器缺口确认；不要仅凭“从左到右”判断。
@@ -64,6 +64,9 @@
 | MOTOR1 编码器 B | PA14 | GPIO 双边沿中断 | 已纠正并验证 |
 | MOTOR2 编码器 A | PA26 | GPIO 双边沿中断 | 已验证 |
 | MOTOR2 编码器 B | PA27 | GPIO 双边沿中断 | 已验证 |
+| MaixCAM 状态 TX | PA23 | UART2 TX | 115200，接 MaixCAM A18 |
+| MaixCAM 目标 RX | PA24 | UART2 RX | 115200，接 MaixCAM A19 |
+| 电磁铁 MOSFET | PB10 | GPIO | 高电平有效，只接外置 MOSFET IN |
 
 ## 4. 串口接口
 
@@ -77,6 +80,21 @@
 
 - 当前正式调试口使用 **UART1**，因为 PA0/PA1 已用于 IMU。
 - UART0/1/2 的发送功能均已实机验证；USB-TTL 使用交叉接法：板 TX 接 TTL RX。
+
+### MaixCAM 专用接法
+
+当前寻球小车使用 UART2：
+
+| MaixCAM | PCB UART2 | 说明 |
+|---|---|---|
+| A19 / UART1_TX | 3 脚 RX=PA24 | 目标数据 |
+| A18 / UART1_RX | 4 脚 TX=PA23 | 小车状态 |
+| GND | 2 脚 GND | 必须共地 |
+| 不接 | 1 脚 +5V | MaixCAM 用 Type-C 供电时留空 |
+
+- 串口电平必须为 3.3 V TTL，禁止将 5 V/12 V 接入 MaixCAM IO。
+- PA23 属于核心板建议避免使用的特殊引脚；若回传状态异常，复核核心板 R8、R9、C14、C15。PA24 接收目标可先单向验证。
+- 详细供电与电磁铁接法见 `docs/ball_car_wiring.md`。
 
 ### 电机兼容/特殊串口
 
