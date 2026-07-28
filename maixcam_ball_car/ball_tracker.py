@@ -147,25 +147,34 @@ class BallTracker:
                 if track["id"] == self._control_track_id:
                     return track
 
-        def priority(track):
-            frame_area = self._frame_width * self._frame_height
-            area_score = min(1.0, track["w"] * track["h"] / (0.08 * frame_area))
-            half_width = max(1.0, self._frame_width * 0.5)
-            center_score = max(
-                0.0,
-                1.0 - abs(track["cx"] - half_width) / half_width,
-            )
-            bottom_score = max(
-                0.0,
-                min(1.0, track["cy"] / max(1.0, self._frame_height)),
-            )
-            return (
-                0.50 * track["score"]
-                + 0.25 * area_score
-                + 0.15 * center_score
-                + 0.10 * bottom_score
-            )
-
-        selected = max(tracks, key=priority)
+        selected = max(tracks, key=self._priority)
         self._control_track_id = selected["id"]
         return selected
+
+    def select_warning(self, displayed):
+        """Choose one red-box observation for early vehicle slowdown."""
+        if not displayed:
+            return None
+        return max(displayed, key=self._priority)
+
+    def _priority(self, track):
+        frame_area = self._frame_width * self._frame_height
+        area_score = min(
+            1.0,
+            track["w"] * track["h"] / (0.08 * frame_area),
+        )
+        half_width = max(1.0, self._frame_width * 0.5)
+        center_score = max(
+            0.0,
+            1.0 - abs(track["cx"] - half_width) / half_width,
+        )
+        bottom_score = max(
+            0.0,
+            min(1.0, track["cy"] / max(1.0, self._frame_height)),
+        )
+        return (
+            0.50 * track["score"]
+            + 0.25 * area_score
+            + 0.15 * center_score
+            + 0.10 * bottom_score
+        )

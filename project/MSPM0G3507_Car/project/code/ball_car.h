@@ -7,25 +7,26 @@
 #define BALL_CAR_HISTORY_SAMPLE_TICKS           (2U)
 #define BALL_CAR_HISTORY_CAPACITY               (512U)
 
-#define BALL_CAR_MIN_CONTROL_CONFIDENCE         (70U)
+#define BALL_CAR_MIN_CONTROL_CONFIDENCE         (60U)
+#define BALL_CAR_MIN_WARNING_CONFIDENCE         (50U)
+#define BALL_CAR_WARNING_SPEED_SCALE            (1.0f / 3.0f)
 #define BALL_CAR_TARGET_CONFIRM_TICKS           (10U)
 #define BALL_CAR_STOP_LOCK_TICKS                (20U)
-#define BALL_CAR_TARGET_LOST_GRACE_TICKS        (30U)
+#define BALL_CAR_TARGET_LOST_CONFIRM_TICKS      (10U)
 #define BALL_CAR_APPROACH_TIMEOUT_TICKS         (750U)
-#define BALL_CAR_FINAL_CREEP_TICKS              (35U)
-#define BALL_CAR_PICKUP_SETTLE_TICKS            (50U)
+#define BALL_CAR_FINAL_CREEP_TICKS              (200U)
+#define BALL_CAR_MAGNET_HOLD_TICKS              (1500U)
 #define BALL_CAR_LINE_CONFIRM_TICKS             (3U)
 #define BALL_CAR_REACQUIRE_SWEEP_TICKS          (60U)
 #define BALL_CAR_REACQUIRE_TIMEOUT_TICKS        (300U)
 
-#define BALL_CAR_CLOSE_PERCENT                  (30U)
+#define BALL_CAR_APPROACH_NEAR_PERCENT          (30U)
 #define BALL_CAR_APPROACH_FAR_RPM               (28.0f)
 #define BALL_CAR_APPROACH_NEAR_RPM              (13.0f)
 #define BALL_CAR_APPROACH_MAX_RPM               (38.0f)
 #define BALL_CAR_APPROACH_TURN_KP               (0.18f)
 #define BALL_CAR_APPROACH_X_DEADBAND             (8)
 #define BALL_CAR_VISION_STEERING_SIGN            (1.0f)
-#define BALL_CAR_TARGET_SEARCH_RPM               (12.0f)
 #define BALL_CAR_FINAL_CREEP_RPM                 (11.0f)
 #define BALL_CAR_REACQUIRE_RPM                   (12.0f)
 
@@ -103,6 +104,7 @@ typedef struct
     int16_t last_target_error;
     uint8_t payload_held;
     uint8_t magnet_on;
+    uint16_t magnet_hold_ticks;
 
     uint16_t history_count;
     uint16_t replay_index;

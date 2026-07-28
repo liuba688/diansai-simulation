@@ -93,6 +93,22 @@ class BallTrackerTests(unittest.TestCase):
         self.assertIsNone(selected)
         self.assertEqual(tracker.tracks, [])
 
+    def test_red_box_is_available_before_green_control_confirmation(self):
+        tracker = BallTracker(320, 320)
+        detection = Detection(140, 180, 40, 42, 0.85)
+
+        warning = None
+        for _ in range(config.TRACK_CONFIRM_FRAMES):
+            displayed, controllable, selected = tracker.update(
+                [candidate(detection)]
+            )
+            warning = tracker.select_warning(displayed)
+
+        self.assertEqual(len(displayed), 1)
+        self.assertEqual(controllable, [])
+        self.assertIsNone(selected)
+        self.assertIsNotNone(warning)
+
 
 if __name__ == "__main__":
     unittest.main()

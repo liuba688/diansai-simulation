@@ -47,7 +47,8 @@ GCC 13
 
 - 低置信度或未确认目标不能让小车离线；
 - 完整循迹、确认、接近、吸取、倒退、捕线、带球循迹循环；
-- 视觉持续丢失后关闭电磁铁并倒退；
+- 锁定目标后立即开启电磁铁，视觉连续丢失约 100 ms 后直行 2 s，再默认吸取成功并倒退；
+- 判定吸取后电磁铁保持 15 s，倒退、捕线和恢复巡线期间不关闭；
 - 接近超时后倒退；
 - 重新捕线超时进入停车故障；
 - 已持球时停车保持吸合，人工释放后关闭电磁铁；
@@ -71,7 +72,7 @@ GCC 13
 - Python 协议和目标跟踪共 6 项测试通过；
 - 全部 Python 文件通过语法编译；
 - 应用清单列出的所有文件和配套模型均存在；
-- 显示阈值 50%，控制阈值 70%，控制前连续确认 5 帧；
+- 显示阈值 50%，控制阈值 60%，控制前连续确认 5 帧；
 - 目标帧最高约 30 Hz，小车状态约 5 Hz，MSPM0 端 200 ms 链路超时。
 
 ## 4. MSPM0G3507 构建
@@ -115,9 +116,10 @@ MaixCAM 用 Type-C 供电时，PCB UART2 的 `+5V` 留空。电磁铁线圈必�
 
 软件交付已完成并通过静态、主机和目标编译验证。以下参数依赖实际镜头高度、电磁铁位置、轮胎打滑和线圈规格，不应在没有整车的情况下伪造“最终值”：
 
-- `CLOSE_BOX_HEIGHT_RATIO`
 - `BALL_CAR_VISION_STEERING_SIGN`
+- `BALL_CAR_FINAL_CREEP_RPM`
 - `BALL_CAR_FINAL_CREEP_TICKS`
-- `BALL_CAR_PICKUP_SETTLE_TICKS`
+- `LINE_FOLLOW_WHITE_RIGHT_LEFT_RPM`
+- `LINE_FOLLOW_WHITE_RIGHT_RIGHT_RPM`
 
-首次联合测试必须按 `docs/deployment_and_test.md` 的架空、单向 UART、视觉转向、接近距离和电磁铁五阶段顺序执行。
+首次联合测试必须按 `docs/deployment_and_test.md` 的架空、单向 UART、视觉转向、丢失后盲走和电磁铁五阶段顺序执行。

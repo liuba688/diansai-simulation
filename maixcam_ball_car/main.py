@@ -82,8 +82,14 @@ def _draw_track(frame, track, selected):
     )
 
 
-def _target_values(selected, controllable_count, frame_width, frame_height):
-    if selected is None:
+def _target_values(
+    observed,
+    confirmed,
+    displayed_count,
+    frame_width,
+    frame_height,
+):
+    if observed is None:
         return {
             "flags": 0,
             "center_x": 0,
@@ -91,23 +97,25 @@ def _target_values(selected, controllable_count, frame_width, frame_height):
             "width": 0,
             "height": 0,
             "confidence": 0,
-            "count": controllable_count,
+            "count": 0,
         }
 
-    flags = TARGET_FLAG_VALID | TARGET_FLAG_CONFIRMED
-    if selected["h"] >= frame_height * config.CLOSE_BOX_HEIGHT_RATIO:
+    flags = TARGET_FLAG_VALID
+    if confirmed:
+        flags |= TARGET_FLAG_CONFIRMED
+    if observed["h"] >= frame_height * config.CLOSE_BOX_HEIGHT_RATIO:
         flags |= TARGET_FLAG_CLOSE
-    if controllable_count > 1:
+    if displayed_count > 1:
         flags |= TARGET_FLAG_MULTIPLE
 
     return {
         "flags": flags,
-        "center_x": int(selected["cx"]),
-        "center_y": int(selected["cy"]),
-        "width": int(selected["w"]),
-        "height": int(selected["h"]),
-        "confidence": selected["score"] * 100.0,
-        "count": controllable_count,
+        "center_x": int(observed["cx"]),
+        "center_y": int(observed["cy"]),
+        "width": int(observed["w"]),
+        "height": int(observed["h"]),
+        "confidence": observed["score"] * 100.0,
+        "count": displayed_count,
     }
 
 
@@ -172,9 +180,16 @@ def main():
                     candidates.append(candidate)
 
             displayed, controllable, selected = tracker.update(candidates)
+            warning = (
+                None
+                if selected is not None
+                else tracker.select_warning(displayed)
+            )
+            observed = selected if selected is not None else warning
             target = _target_values(
-                selected,
-                len(controllable),
+                observed,
+                selected is not None,
+                len(displayed),
                 frame_width,
                 frame_height,
             )
@@ -251,14 +266,15 @@ def main():
             )
 
             if now - last_log_time >= config.LOG_INTERVAL_SECONDS:
-                if selected is None:
+                if observed is None:
                     selected_summary = "target=none"
                 else:
                     selected_summary = (
-                        "target=id{} x={} y={} w={} h={} conf={:.0f} "
+                        "target={} id{} x={} y={} w={} h={} conf={:.0f} "
                         "close={}"
                     ).format(
-                        selected["id"],
+                        "GREEN" if selected is not None else "RED",
+                        observed["id"],
                         target["center_x"],
                         target["center_y"],
                         target["width"],

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "ball_car.h"
+#include "line_follow.h"
 #include "vision_protocol.h"
 
 static void test_protocol_parser(void)
@@ -210,6 +211,44 @@ static void test_control_gate(void)
         100U);
 }
 
+static void test_red_box_slows_line_follow_before_green_control(void)
+{
+    ball_car_struct car;
+    ball_car_input_struct input;
+    ball_car_output_struct output;
+
+    ball_car_init(&car);
+    set_line_follow_input(&input);
+    memset(&output, 0, sizeof(output));
+
+    ball_car_update(&car, &input, &output);
+    assert(BALL_CAR_STATE_LINE_FOLLOW == output.state);
+    assert(70.0f == output.left_target_rpm);
+    assert(70.0f == output.right_target_rpm);
+
+    input.vision_link_alive = 1U;
+    input.vision_valid = 1U;
+    input.vision_confirmed = 0U;
+    input.vision_confidence = BALL_CAR_MIN_WARNING_CONFIDENCE;
+    input.vision_frame_width = 320U;
+    input.vision_frame_height = 320U;
+    ball_car_update(&car, &input, &output);
+    assert(BALL_CAR_STATE_LINE_FOLLOW == output.state);
+    assert(output.left_target_rpm > 23.32f);
+    assert(output.left_target_rpm < 23.34f);
+    assert(output.right_target_rpm > 23.32f);
+    assert(output.right_target_rpm < 23.34f);
+    assert(!output.magnet_on);
+
+    input.vision_confirmed = 1U;
+    input.vision_confidence = BALL_CAR_MIN_CONTROL_CONFIDENCE;
+    ball_car_update(&car, &input, &output);
+    assert(BALL_CAR_STATE_STOP_LOCK == output.state);
+    assert(0.0f == output.left_target_rpm);
+    assert(0.0f == output.right_target_rpm);
+    assert(output.magnet_on);
+}
+
 static void test_complete_pickup_cycle(void)
 {
     ball_car_struct car;
@@ -244,6 +283,7 @@ static void test_complete_pickup_cycle(void)
         ball_car_update(&car, &input, &output);
     }
     assert(BALL_CAR_STATE_APPROACH == car.state);
+    assert(output.magnet_on);
 
     for(guard = 0U; guard < 10U; guard++)
     {
@@ -251,22 +291,18 @@ static void test_complete_pickup_cycle(void)
     }
     assert(car.history_count > 0U);
 
-    set_valid_target(&input, 1U);
-    ball_car_update(&car, &input, &output);
-    assert(BALL_CAR_STATE_FINAL_CREEP == car.state);
+    input.vision_valid = 0U;
+    input.vision_confirmed = 0U;
+    run_until_state(
+        &car,
+        &input,
+        &output,
+        BALL_CAR_STATE_FINAL_CREEP,
+        BALL_CAR_TARGET_LOST_CONFIRM_TICKS + 5U);
     assert(output.magnet_on);
 
     for(guard = 0U;
-        (guard < 200U)
-        && (BALL_CAR_STATE_PICKUP_SETTLE != car.state);
-        guard++)
-    {
-        ball_car_update(&car, &input, &output);
-    }
-    assert(BALL_CAR_STATE_PICKUP_SETTLE == car.state);
-
-    for(guard = 0U;
-        (guard < 200U)
+        (guard < BALL_CAR_FINAL_CREEP_TICKS + 5U)
         && (BALL_CAR_STATE_BACKTRACK != car.state);
         guard++)
     {
@@ -274,8 +310,7 @@ static void test_complete_pickup_cycle(void)
     }
     assert(BALL_CAR_STATE_BACKTRACK == car.state);
     assert(output.payload_held);
-    input.vision_valid = 0U;
-    input.vision_confirmed = 0U;
+    assert(BALL_CAR_MAGNET_HOLD_TICKS == car.magnet_hold_ticks);
     input.line_valid = 0U;
 
     for(guard = 0U;
@@ -299,6 +334,14 @@ static void test_complete_pickup_cycle(void)
     assert(output.payload_held);
     assert(output.magnet_on);
 
+    while(car.magnet_hold_ticks > 0U)
+    {
+        ball_car_update(&car, &input, &output);
+    }
+    assert(BALL_CAR_STATE_LINE_FOLLOW == car.state);
+    assert(!output.payload_held);
+    assert(!output.magnet_on);
+
     input.enabled = 0U;
     input.release_payload = 1U;
     ball_car_update(&car, &input, &output);
@@ -307,7 +350,7 @@ static void test_complete_pickup_cycle(void)
     assert(!output.magnet_on);
 }
 
-static void test_vision_loss_and_reacquire_timeout(void)
+static void test_target_loss_starts_two_second_blind_advance(void)
 {
     ball_car_struct car;
     ball_car_input_struct input;
@@ -315,30 +358,50 @@ static void test_vision_loss_and_reacquire_timeout(void)
     unsigned int tick;
 
     enter_approach(&car, &input, &output);
-    for(tick = 0U; tick < 12U; tick++)
-    {
-        ball_car_update(&car, &input, &output);
-    }
-    assert(car.history_count > 0U);
+    assert(output.magnet_on);
 
     input.vision_valid = 0U;
     input.vision_confirmed = 0U;
     input.line_valid = 0U;
-    run_until_state(
-        &car,
-        &input,
-        &output,
-        BALL_CAR_STATE_BACKTRACK,
-        BALL_CAR_TARGET_LOST_GRACE_TICKS + 5U);
-    assert(BALL_CAR_FAULT_VISION_LOST == car.fault);
-    assert(!output.magnet_on);
 
-    run_until_state(
-        &car,
-        &input,
-        &output,
-        BALL_CAR_STATE_REACQUIRE_LINE,
-        1000U);
+    for(tick = 0U;
+        tick < BALL_CAR_TARGET_LOST_CONFIRM_TICKS - 1U;
+        tick++)
+    {
+        ball_car_update(&car, &input, &output);
+        assert(BALL_CAR_STATE_APPROACH == car.state);
+        assert(BALL_CAR_FINAL_CREEP_RPM == output.left_target_rpm);
+        assert(BALL_CAR_FINAL_CREEP_RPM == output.right_target_rpm);
+        assert(output.magnet_on);
+    }
+
+    ball_car_update(&car, &input, &output);
+    assert(BALL_CAR_STATE_FINAL_CREEP == car.state);
+    assert(BALL_CAR_FAULT_NONE == car.fault);
+
+    for(tick = 0U; tick < BALL_CAR_FINAL_CREEP_TICKS - 1U; tick++)
+    {
+        ball_car_update(&car, &input, &output);
+        assert(BALL_CAR_STATE_FINAL_CREEP == car.state);
+        assert(output.magnet_on);
+    }
+    ball_car_update(&car, &input, &output);
+    assert(BALL_CAR_STATE_BACKTRACK == car.state);
+    assert(output.payload_held);
+    assert(output.magnet_on);
+}
+
+static void test_reacquire_timeout(void)
+{
+    ball_car_struct car;
+    ball_car_input_struct input;
+    ball_car_output_struct output;
+
+    ball_car_init(&car);
+    set_line_follow_input(&input);
+    memset(&output, 0, sizeof(output));
+    car.state = BALL_CAR_STATE_REACQUIRE_LINE;
+    input.line_valid = 0U;
     run_until_state(
         &car,
         &input,
@@ -380,6 +443,7 @@ static void test_stop_preserves_held_payload_until_release(void)
     car.state = BALL_CAR_STATE_LINE_FOLLOW_CARRY;
     car.payload_held = 1U;
     car.magnet_on = 1U;
+    car.magnet_hold_ticks = BALL_CAR_MAGNET_HOLD_TICKS;
 
     ball_car_update(&car, &input, &output);
     assert(BALL_CAR_STATE_IDLE == output.state);
@@ -392,15 +456,46 @@ static void test_stop_preserves_held_payload_until_release(void)
     assert(!output.magnet_on);
 }
 
+static void test_all_white_turns_right_until_line_returns(void)
+{
+    line_follow_struct follow;
+    line_sensor_data_struct sensor;
+    float left_rpm;
+    float right_rpm;
+    unsigned int tick;
+
+    line_follow_init(&follow);
+    memset(&sensor, 0, sizeof(sensor));
+
+    for(tick = 0U; tick < 500U; tick++)
+    {
+        line_follow_update(&follow, &sensor, &left_rpm, &right_rpm);
+        assert(LINE_FOLLOW_MODE_WHITE_RIGHT == follow.mode);
+        assert(LINE_FOLLOW_WHITE_RIGHT_LEFT_RPM == left_rpm);
+        assert(LINE_FOLLOW_WHITE_RIGHT_RIGHT_RPM == right_rpm);
+    }
+
+    sensor.line_valid = 1U;
+    sensor.mask = 0x18U;
+    sensor.error = 0;
+    line_follow_update(&follow, &sensor, &left_rpm, &right_rpm);
+    assert(LINE_FOLLOW_MODE_NORMAL == follow.mode);
+    assert(left_rpm > 0.0f);
+    assert(right_rpm > 0.0f);
+}
+
 int main(void)
 {
     test_protocol_parser();
     test_status_packet_builder();
     test_control_gate();
+    test_red_box_slows_line_follow_before_green_control();
     test_complete_pickup_cycle();
-    test_vision_loss_and_reacquire_timeout();
+    test_target_loss_starts_two_second_blind_advance();
+    test_reacquire_timeout();
     test_approach_timeout_backtracks();
     test_stop_preserves_held_payload_until_release();
+    test_all_white_turns_right_until_line_returns();
     puts("ball_car tests passed");
     return 0;
 }

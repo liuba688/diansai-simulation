@@ -59,23 +59,18 @@ static uint8_t ball_car_target_eligible(
         && (0U != input->vision_frame_height);
 }
 
-static uint8_t ball_car_target_close(
+static uint8_t ball_car_target_observed(
     const ball_car_input_struct *input)
 {
-    uint32_t height_percent;
+    return input->vision_link_alive
+        && input->vision_valid
+        && (input->vision_confidence
+            >= BALL_CAR_MIN_WARNING_CONFIDENCE);
+}
 
-    if(input->vision_close)
-    {
-        return 1U;
-    }
-    if(0U == input->vision_frame_height)
-    {
-        return 0U;
-    }
-
-    height_percent = ((uint32_t)input->vision_height * 100U)
-                   / input->vision_frame_height;
-    return (height_percent >= BALL_CAR_CLOSE_PERCENT);
+static float ball_car_warning_speed(float rpm)
+{
+    return rpm * BALL_CAR_WARNING_SPEED_SCALE;
 }
 
 static void ball_car_clear_history(ball_car_struct *car)
@@ -149,7 +144,8 @@ static void ball_car_approach_command(
 
     height_percent = ((uint32_t)input->vision_height * 100U)
                    / input->vision_frame_height;
-    progress = (float)height_percent / (float)BALL_CAR_CLOSE_PERCENT;
+    progress = (float)height_percent
+             / (float)BALL_CAR_APPROACH_NEAR_PERCENT;
     if(progress > 1.0f)
     {
         progress = 1.0f;
@@ -182,17 +178,6 @@ static void ball_car_approach_command(
                               BALL_CAR_APPROACH_MAX_RPM);
     *right_rpm = ball_car_limit(base_rpm - turn_rpm,
                                BALL_CAR_APPROACH_MAX_RPM);
-}
-
-static void ball_car_target_search_command(
-    const ball_car_struct *car,
-    float *left_rpm,
-    float *right_rpm)
-{
-    float direction = (car->last_target_error < 0) ? -1.0f : 1.0f;
-
-    *left_rpm = direction * BALL_CAR_TARGET_SEARCH_RPM;
-    *right_rpm = -direction * BALL_CAR_TARGET_SEARCH_RPM;
 }
 
 static void ball_car_reacquire_command(
@@ -251,6 +236,7 @@ void ball_car_update(
     ball_car_output_struct *output)
 {
     uint8_t target_eligible;
+    uint8_t target_observed;
     uint8_t history_ok;
     uint16_t line_detection_start;
 
@@ -270,9 +256,33 @@ void ball_car_update(
     {
         car->payload_held = 0U;
         car->magnet_on = 0U;
+        car->magnet_hold_ticks = 0U;
         if(BALL_CAR_STATE_LINE_FOLLOW_CARRY == car->state)
         {
             ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
+        }
+    }
+
+    /*
+     * The 15 s hold starts only after the 2 s blind advance has completed.
+     * It keeps running during backtrack, line reacquisition, normal line
+     * following, or an operator stop.
+     */
+    if(car->payload_held)
+    {
+        if(car->magnet_hold_ticks > 0U)
+        {
+            car->magnet_on = 1U;
+            car->magnet_hold_ticks--;
+        }
+        if(0U == car->magnet_hold_ticks)
+        {
+            car->payload_held = 0U;
+            car->magnet_on = 0U;
+            if(BALL_CAR_STATE_LINE_FOLLOW_CARRY == car->state)
+            {
+                ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
+            }
         }
     }
 
@@ -307,46 +317,63 @@ void ball_car_update(
         car->state_ticks++;
     }
     target_eligible = ball_car_target_eligible(input);
+    target_observed = ball_car_target_observed(input);
 
     switch(car->state)
     {
         case BALL_CAR_STATE_LINE_FOLLOW:
-            output->left_target_rpm = input->line_left_rpm;
-            output->right_target_rpm = input->line_right_rpm;
+            output->left_target_rpm =
+                target_observed
+                    ? ball_car_warning_speed(input->line_left_rpm)
+                    : input->line_left_rpm;
+            output->right_target_rpm =
+                target_observed
+                    ? ball_car_warning_speed(input->line_right_rpm)
+                    : input->line_right_rpm;
             if(target_eligible)
             {
-                car->target_confirm_ticks = 1U;
-                ball_car_enter_state(car, BALL_CAR_STATE_TARGET_CONFIRM);
+                car->magnet_on = 1U;
+                car->departure_line_error = input->line_error;
+                car->last_target_error =
+                    (int16_t)input->vision_center_x
+                    - (int16_t)(input->vision_frame_width / 2U);
+                output->left_target_rpm = 0.0f;
+                output->right_target_rpm = 0.0f;
+                ball_car_enter_state(car, BALL_CAR_STATE_STOP_LOCK);
             }
             break;
 
         case BALL_CAR_STATE_TARGET_CONFIRM:
-            output->left_target_rpm = input->line_left_rpm;
-            output->right_target_rpm = input->line_right_rpm;
+            /*
+             * Kept for old state-number compatibility. New MaixCAM builds
+             * already require five stable frames before setting CONFIRMED,
+             * so a green target enters STOP_LOCK directly from LINE_FOLLOW.
+             */
+            output->left_target_rpm =
+                ball_car_warning_speed(input->line_left_rpm);
+            output->right_target_rpm =
+                ball_car_warning_speed(input->line_right_rpm);
             if(target_eligible)
             {
-                if(car->target_confirm_ticks < 0xFFFFU)
-                {
-                    car->target_confirm_ticks++;
-                }
-                if(car->target_confirm_ticks
-                   >= BALL_CAR_TARGET_CONFIRM_TICKS)
-                {
-                    car->departure_line_error = input->line_error;
-                    car->last_target_error =
-                        (int16_t)input->vision_center_x
-                        - (int16_t)(input->vision_frame_width / 2U);
-                    ball_car_enter_state(car, BALL_CAR_STATE_STOP_LOCK);
-                }
+                car->magnet_on = 1U;
+                car->departure_line_error = input->line_error;
+                car->last_target_error =
+                    (int16_t)input->vision_center_x
+                    - (int16_t)(input->vision_frame_width / 2U);
+                output->left_target_rpm = 0.0f;
+                output->right_target_rpm = 0.0f;
+                ball_car_enter_state(car, BALL_CAR_STATE_STOP_LOCK);
             }
             else
             {
                 car->target_confirm_ticks = 0U;
+                car->magnet_on = 0U;
                 ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
             }
             break;
 
         case BALL_CAR_STATE_STOP_LOCK:
+            car->magnet_on = 1U;
             if(target_eligible)
             {
                 car->target_lost_ticks = 0U;
@@ -355,8 +382,9 @@ void ball_car_update(
             {
                 car->target_lost_ticks++;
                 if(car->target_lost_ticks
-                   > BALL_CAR_TARGET_LOST_GRACE_TICKS)
+                   >= BALL_CAR_TARGET_LOST_CONFIRM_TICKS)
                 {
+                    car->magnet_on = 0U;
                     ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
                     break;
                 }
@@ -370,6 +398,7 @@ void ball_car_update(
             break;
 
         case BALL_CAR_STATE_APPROACH:
+            car->magnet_on = 1U;
             if(car->state_ticks >= BALL_CAR_APPROACH_TIMEOUT_TICKS)
             {
                 ball_car_set_fault(car, BALL_CAR_FAULT_APPROACH_TIMEOUT);
@@ -381,13 +410,6 @@ void ball_car_update(
             if(target_eligible)
             {
                 car->target_lost_ticks = 0U;
-                if(ball_car_target_close(input))
-                {
-                    car->magnet_on = 1U;
-                    ball_car_enter_state(car, BALL_CAR_STATE_FINAL_CREEP);
-                    break;
-                }
-
                 ball_car_approach_command(
                     car,
                     input,
@@ -400,18 +422,16 @@ void ball_car_update(
                 {
                     car->target_lost_ticks++;
                 }
+                output->left_target_rpm = BALL_CAR_FINAL_CREEP_RPM;
+                output->right_target_rpm = BALL_CAR_FINAL_CREEP_RPM;
                 if(car->target_lost_ticks
-                   > BALL_CAR_TARGET_LOST_GRACE_TICKS)
+                   >= BALL_CAR_TARGET_LOST_CONFIRM_TICKS)
                 {
-                    ball_car_set_fault(car, BALL_CAR_FAULT_VISION_LOST);
-                    car->magnet_on = 0U;
-                    ball_car_prepare_backtrack(car);
+                    ball_car_enter_state(
+                        car,
+                        BALL_CAR_STATE_FINAL_CREEP);
                     break;
                 }
-                ball_car_target_search_command(
-                    car,
-                    &output->left_target_rpm,
-                    &output->right_target_rpm);
             }
 
             history_ok = ball_car_record_history(
@@ -442,22 +462,18 @@ void ball_car_update(
             }
             else if(car->state_ticks >= BALL_CAR_FINAL_CREEP_TICKS)
             {
-                ball_car_enter_state(car, BALL_CAR_STATE_PICKUP_SETTLE);
+                car->payload_held = 1U;
+                car->magnet_hold_ticks = BALL_CAR_MAGNET_HOLD_TICKS;
+                ball_car_prepare_backtrack(car);
             }
             break;
 
         case BALL_CAR_STATE_PICKUP_SETTLE:
+            /* Kept for protocol/state-number compatibility with old builds. */
             car->magnet_on = 1U;
-            if(car->state_ticks >= BALL_CAR_PICKUP_SETTLE_TICKS)
-            {
-                /*
-                 * No pickup sensor is installed in the current hardware.
-                 * The timed electromagnet action is therefore the initial
-                 * acceptance criterion.
-                 */
-                car->payload_held = 1U;
-                ball_car_prepare_backtrack(car);
-            }
+            car->payload_held = 1U;
+            car->magnet_hold_ticks = BALL_CAR_MAGNET_HOLD_TICKS;
+            ball_car_prepare_backtrack(car);
             break;
 
         case BALL_CAR_STATE_BACKTRACK:

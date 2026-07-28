@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+maixcam_ball_car/dist/
 
 # CCS / Make build products
 project/MSPM0G3507_Car/project/ccs/build/
