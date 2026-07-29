@@ -16,7 +16,6 @@ from vision_protocol import (  # noqa: E402
     PACKET_TYPE_CAR_STATUS,
     PROTOCOL_VERSION,
     STATUS_FLAG_ENABLED,
-    STATUS_FLAG_MAGNET_ON,
     TARGET_FLAG_CONFIRMED,
     TARGET_FLAG_VALID,
     PacketParser,
@@ -84,7 +83,7 @@ class VisionProtocolTests(unittest.TestCase):
         payload = struct.pack(
             "<BBBBhh",
             4,
-            STATUS_FLAG_ENABLED | STATUS_FLAG_MAGNET_ON,
+            STATUS_FLAG_ENABLED,
             0,
             0x18,
             123,

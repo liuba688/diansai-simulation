@@ -226,8 +226,7 @@ uint8_t ball_car_requires_line_follow(const ball_car_struct *car)
     }
 
     return (BALL_CAR_STATE_LINE_FOLLOW == car->state)
-        || (BALL_CAR_STATE_TARGET_CONFIRM == car->state)
-        || (BALL_CAR_STATE_LINE_FOLLOW_CARRY == car->state);
+        || (BALL_CAR_STATE_TARGET_CONFIRM == car->state);
 }
 
 void ball_car_update(
@@ -247,55 +246,13 @@ void ball_car_update(
 
     output->left_target_rpm = 0.0f;
     output->right_target_rpm = 0.0f;
-    output->magnet_on = car->magnet_on;
-    output->payload_held = car->payload_held;
     output->state = car->state;
     output->fault = car->fault;
-
-    if(input->release_payload)
-    {
-        car->payload_held = 0U;
-        car->magnet_on = 0U;
-        car->magnet_hold_ticks = 0U;
-        if(BALL_CAR_STATE_LINE_FOLLOW_CARRY == car->state)
-        {
-            ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
-        }
-    }
-
-    /*
-     * The 15 s hold starts only after the 2 s blind advance has completed.
-     * It keeps running during backtrack, line reacquisition, normal line
-     * following, or an operator stop.
-     */
-    if(car->payload_held)
-    {
-        if(car->magnet_hold_ticks > 0U)
-        {
-            car->magnet_on = 1U;
-            car->magnet_hold_ticks--;
-        }
-        if(0U == car->magnet_hold_ticks)
-        {
-            car->payload_held = 0U;
-            car->magnet_on = 0U;
-            if(BALL_CAR_STATE_LINE_FOLLOW_CARRY == car->state)
-            {
-                ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
-            }
-        }
-    }
 
     if(!input->enabled)
     {
         ball_car_enter_state(car, BALL_CAR_STATE_IDLE);
         ball_car_clear_history(car);
-        if(!car->payload_held)
-        {
-            car->magnet_on = 0U;
-        }
-        output->magnet_on = car->magnet_on;
-        output->payload_held = car->payload_held;
         output->state = car->state;
         output->fault = car->fault;
         return;
@@ -305,11 +262,7 @@ void ball_car_update(
     {
         car->fault = BALL_CAR_FAULT_NONE;
         ball_car_clear_history(car);
-        ball_car_enter_state(
-            car,
-            car->payload_held
-                ? BALL_CAR_STATE_LINE_FOLLOW_CARRY
-                : BALL_CAR_STATE_LINE_FOLLOW);
+        ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
     }
 
     if(car->state_ticks < 0xFFFFU)
@@ -332,7 +285,6 @@ void ball_car_update(
                     : input->line_right_rpm;
             if(target_eligible)
             {
-                car->magnet_on = 1U;
                 car->departure_line_error = input->line_error;
                 car->last_target_error =
                     (int16_t)input->vision_center_x
@@ -355,7 +307,6 @@ void ball_car_update(
                 ball_car_warning_speed(input->line_right_rpm);
             if(target_eligible)
             {
-                car->magnet_on = 1U;
                 car->departure_line_error = input->line_error;
                 car->last_target_error =
                     (int16_t)input->vision_center_x
@@ -367,13 +318,11 @@ void ball_car_update(
             else
             {
                 car->target_confirm_ticks = 0U;
-                car->magnet_on = 0U;
                 ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
             }
             break;
 
         case BALL_CAR_STATE_STOP_LOCK:
-            car->magnet_on = 1U;
             if(target_eligible)
             {
                 car->target_lost_ticks = 0U;
@@ -384,7 +333,6 @@ void ball_car_update(
                 if(car->target_lost_ticks
                    >= BALL_CAR_TARGET_LOST_CONFIRM_TICKS)
                 {
-                    car->magnet_on = 0U;
                     ball_car_enter_state(car, BALL_CAR_STATE_LINE_FOLLOW);
                     break;
                 }
@@ -398,11 +346,9 @@ void ball_car_update(
             break;
 
         case BALL_CAR_STATE_APPROACH:
-            car->magnet_on = 1U;
             if(car->state_ticks >= BALL_CAR_APPROACH_TIMEOUT_TICKS)
             {
                 ball_car_set_fault(car, BALL_CAR_FAULT_APPROACH_TIMEOUT);
-                car->magnet_on = 0U;
                 ball_car_prepare_backtrack(car);
                 break;
             }
@@ -441,13 +387,11 @@ void ball_car_update(
             if(!history_ok)
             {
                 ball_car_set_fault(car, BALL_CAR_FAULT_HISTORY_OVERFLOW);
-                car->magnet_on = 0U;
                 ball_car_prepare_backtrack(car);
             }
             break;
 
         case BALL_CAR_STATE_FINAL_CREEP:
-            car->magnet_on = 1U;
             output->left_target_rpm = BALL_CAR_FINAL_CREEP_RPM;
             output->right_target_rpm = BALL_CAR_FINAL_CREEP_RPM;
             history_ok = ball_car_record_history(
@@ -457,22 +401,15 @@ void ball_car_update(
             if(!history_ok)
             {
                 ball_car_set_fault(car, BALL_CAR_FAULT_HISTORY_OVERFLOW);
-                car->magnet_on = 0U;
                 ball_car_prepare_backtrack(car);
             }
             else if(car->state_ticks >= BALL_CAR_FINAL_CREEP_TICKS)
             {
-                car->payload_held = 1U;
-                car->magnet_hold_ticks = BALL_CAR_MAGNET_HOLD_TICKS;
                 ball_car_prepare_backtrack(car);
             }
             break;
 
-        case BALL_CAR_STATE_PICKUP_SETTLE:
-            /* Kept for protocol/state-number compatibility with old builds. */
-            car->magnet_on = 1U;
-            car->payload_held = 1U;
-            car->magnet_hold_ticks = BALL_CAR_MAGNET_HOLD_TICKS;
+        case BALL_CAR_STATE_RETURN_PREPARE:
             ball_car_prepare_backtrack(car);
             break;
 
@@ -540,11 +477,7 @@ void ball_car_update(
 
             if(car->line_confirm_ticks >= BALL_CAR_LINE_CONFIRM_TICKS)
             {
-                ball_car_enter_state(
-                    car,
-                    car->payload_held
-                        ? BALL_CAR_STATE_LINE_FOLLOW_CARRY
-                        : BALL_CAR_STATE_LINE_FOLLOW);
+                ball_car_enter_state(car, BALL_CAR_STATE_COMPLETE);
                 break;
             }
 
@@ -563,10 +496,7 @@ void ball_car_update(
                 &output->right_target_rpm);
             break;
 
-        case BALL_CAR_STATE_LINE_FOLLOW_CARRY:
-            car->magnet_on = 1U;
-            output->left_target_rpm = input->line_left_rpm;
-            output->right_target_rpm = input->line_right_rpm;
+        case BALL_CAR_STATE_COMPLETE:
             break;
 
         case BALL_CAR_STATE_FAULT:
@@ -577,8 +507,6 @@ void ball_car_update(
             break;
     }
 
-    output->magnet_on = car->magnet_on;
-    output->payload_held = car->payload_held;
     output->state = car->state;
     output->fault = car->fault;
 }
@@ -593,10 +521,10 @@ const char *ball_car_state_name(ball_car_state_enum state)
         "LOCK",
         "APPROACH",
         "CREEP",
-        "PICKUP",
+        "RETURN_PREP",
         "BACKTRACK",
         "REACQUIRE",
-        "CARRY",
+        "COMPLETE",
         "FAULT",
     };
 

@@ -15,7 +15,6 @@
 #define BALL_CAR_TARGET_LOST_CONFIRM_TICKS      (10U)
 #define BALL_CAR_APPROACH_TIMEOUT_TICKS         (750U)
 #define BALL_CAR_FINAL_CREEP_TICKS              (200U)
-#define BALL_CAR_MAGNET_HOLD_TICKS              (1500U)
 #define BALL_CAR_LINE_CONFIRM_TICKS             (3U)
 #define BALL_CAR_REACQUIRE_SWEEP_TICKS          (60U)
 #define BALL_CAR_REACQUIRE_TIMEOUT_TICKS        (300U)
@@ -38,10 +37,10 @@ typedef enum
     BALL_CAR_STATE_STOP_LOCK,
     BALL_CAR_STATE_APPROACH,
     BALL_CAR_STATE_FINAL_CREEP,
-    BALL_CAR_STATE_PICKUP_SETTLE,
+    BALL_CAR_STATE_RETURN_PREPARE,
     BALL_CAR_STATE_BACKTRACK,
     BALL_CAR_STATE_REACQUIRE_LINE,
-    BALL_CAR_STATE_LINE_FOLLOW_CARRY,
+    BALL_CAR_STATE_COMPLETE,
     BALL_CAR_STATE_FAULT,
 } ball_car_state_enum;
 
@@ -63,7 +62,6 @@ typedef struct
 typedef struct
 {
     uint8_t enabled;
-    uint8_t release_payload;
     uint8_t line_valid;
     int16_t line_error;
     float line_left_rpm;
@@ -86,8 +84,6 @@ typedef struct
 {
     float left_target_rpm;
     float right_target_rpm;
-    uint8_t magnet_on;
-    uint8_t payload_held;
     ball_car_state_enum state;
     ball_car_fault_enum fault;
 } ball_car_output_struct;
@@ -102,10 +98,6 @@ typedef struct
     uint16_t line_confirm_ticks;
     int16_t departure_line_error;
     int16_t last_target_error;
-    uint8_t payload_held;
-    uint8_t magnet_on;
-    uint16_t magnet_hold_ticks;
-
     uint16_t history_count;
     uint16_t replay_index;
     uint8_t history_sample_ticks;

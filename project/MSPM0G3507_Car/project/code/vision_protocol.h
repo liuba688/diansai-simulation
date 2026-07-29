@@ -21,8 +21,6 @@
 #define VISION_TARGET_FLAG_MULTIPLE              (1U << 3)
 
 #define VISION_STATUS_FLAG_ENABLED               (1U << 0)
-#define VISION_STATUS_FLAG_MAGNET_ON             (1U << 1)
-#define VISION_STATUS_FLAG_PAYLOAD_HELD          (1U << 2)
 #define VISION_STATUS_FLAG_FAULT                 (1U << 3)
 
 typedef enum

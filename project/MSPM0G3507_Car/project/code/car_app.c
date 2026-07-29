@@ -7,7 +7,10 @@
 #include "ball_car.h"
 #include "line_follow.h"
 #include "line_sensor.h"
-#include "magnet_driver.h"
+#include "angle_pid.h"
+#include "car_menu.h"
+#include "mpu6050_yaw.h"
+#include "odometer.h"
 #include "speed_pid.h"
 #include "tb6612.h"
 #include "vision_protocol.h"
@@ -20,14 +23,6 @@
 #define CAR_DEBUG_LOG_TICKS                    (200U)
 #define CAR_HEARTBEAT_TICKS                    (50U)
 
-typedef enum
-{
-    CAR_COMMAND_NONE = 0,
-    CAR_COMMAND_START,
-    CAR_COMMAND_STOP,
-    CAR_COMMAND_RELEASE,
-} car_command_enum;
-
 typedef struct
 {
     uint32 control_tick;
@@ -37,7 +32,10 @@ typedef struct
     uint16 oled_update_ticks;
     uint16 debug_log_ticks;
     uint8 running_requested;
-    uint8 release_requested;
+    uint8 stationary_hold_correcting;
+    car_task_t active_task;
+    float yaw_target;
+    float yaw_angle;
 
     int32 left_encoder_previous;
     int32 right_encoder_previous;
@@ -48,104 +46,16 @@ typedef struct
     ball_car_struct ball_car;
     ball_car_output_struct ball_output;
     vision_uart_snapshot_struct vision;
+    angle_pid_struct angle_pid;
+    odometer_struct odometer;
 } car_app_context_struct;
 
 static soft_iic_info_struct car_oled_iic;
 static car_app_context_struct car_context;
 
-static void car_ack_write(const char *text)
-{
-    uart_write_string(UART_1, text);
-    uart_write_string(UART_3, text);
-}
-
 static void car_debug_write(const char *text)
 {
     uart_write_string(UART_1, text);
-}
-
-static car_command_enum car_bluetooth_query_command(void)
-{
-    static char command[16];
-    static uint8 command_length = 0U;
-    uint8 data;
-
-    while(0U != uart_query_byte(UART_3, &data))
-    {
-        if('1' == data)
-        {
-            command_length = 0U;
-            return CAR_COMMAND_START;
-        }
-        if('0' == data)
-        {
-            command_length = 0U;
-            return CAR_COMMAND_STOP;
-        }
-        if('2' == data)
-        {
-            command_length = 0U;
-            return CAR_COMMAND_RELEASE;
-        }
-
-        if(('\r' == data) || ('\n' == data))
-        {
-            if(0U == command_length)
-            {
-                continue;
-            }
-
-            command[command_length] = '\0';
-            command_length = 0U;
-            if(0 == strcmp(command, "START"))
-            {
-                return CAR_COMMAND_START;
-            }
-            if(0 == strcmp(command, "STOP"))
-            {
-                return CAR_COMMAND_STOP;
-            }
-            if((0 == strcmp(command, "RELEASE"))
-               || (0 == strcmp(command, "DROP")))
-            {
-                return CAR_COMMAND_RELEASE;
-            }
-            car_ack_write(
-                "Unknown command. Use 1=START, 0=STOP, 2=RELEASE.\r\n");
-        }
-        else if(command_length < (sizeof(command) - 1U))
-        {
-            if((data >= 'a') && (data <= 'z'))
-            {
-                data = (uint8)(data - 'a' + 'A');
-            }
-            command[command_length] = (char)data;
-            command_length++;
-            command[command_length] = '\0';
-
-            if(0 == strcmp(command, "START"))
-            {
-                command_length = 0U;
-                return CAR_COMMAND_START;
-            }
-            if(0 == strcmp(command, "STOP"))
-            {
-                command_length = 0U;
-                return CAR_COMMAND_STOP;
-            }
-            if((0 == strcmp(command, "RELEASE"))
-               || (0 == strcmp(command, "DROP")))
-            {
-                command_length = 0U;
-                return CAR_COMMAND_RELEASE;
-            }
-        }
-        else
-        {
-            command_length = 0U;
-        }
-    }
-    return CAR_COMMAND_NONE;
 }
 
 static void car_oled_write_command(uint8 command)
@@ -269,10 +179,9 @@ static void car_oled_update_status(uint8 motion_enabled)
             car_context.vision.target.confidence);
     car_oled_show_string(4U, line);
     sprintf(line,
-            "%s M:%u P:%u",
+            "%s Y:%+5.1f",
             motion_enabled ? "RUN" : "STOP",
-            car_context.ball_output.magnet_on,
-            car_context.ball_output.payload_held);
+            (double)car_context.yaw_angle);
     car_oled_show_string(6U, line);
 }
 
@@ -287,38 +196,63 @@ static void car_reset_speed_control(void)
     tb6612_stop_all();
 }
 
-static void car_apply_command(car_command_enum command)
+static void car_stop_and_open_menu(void)
 {
-    switch(command)
+    car_context.running_requested = 0U;
+    car_context.start_delay_tick = 0U;
+    car_context.stationary_hold_correcting = 0U;
+    car_context.active_task = CAR_TASK_NONE;
+    angle_pid_reset(&car_context.angle_pid);
+    car_reset_speed_control();
+    car_menu_open();
+}
+
+static void car_apply_menu_task(car_task_t task)
+{
+    if(CAR_TASK_NONE == task)
     {
-        case CAR_COMMAND_START:
-            car_context.running_requested = 1U;
-            car_context.start_delay_tick = 0U;
-            car_context.release_requested = 0U;
-            car_reset_speed_control();
-            car_ack_write("ACK START: 3 s safety delay.\r\n");
-            break;
-
-        case CAR_COMMAND_STOP:
-            car_context.running_requested = 0U;
-            car_context.start_delay_tick = 0U;
-            car_context.release_requested = 0U;
-            car_reset_speed_control();
-            car_ack_write("ACK STOP: motors stopped.\r\n");
-            break;
-
-        case CAR_COMMAND_RELEASE:
-            car_context.running_requested = 0U;
-            car_context.start_delay_tick = 0U;
-            car_context.release_requested = 1U;
-            car_reset_speed_control();
-            car_ack_write("ACK RELEASE: stopped and magnet released.\r\n");
-            break;
-
-        case CAR_COMMAND_NONE:
-        default:
-            break;
+        return;
     }
+    if(CAR_TASK_STOP == task)
+    {
+        car_stop_and_open_menu();
+        return;
+    }
+    if(CAR_TASK_RESET_YAW == task)
+    {
+        car_stop_and_open_menu();
+        car_oled_show_string(0U, "KEEP CAR STILL");
+        mpu6050_yaw_calibrate(MPU6500_CALIB_SAMPLES);
+        mpu6050_yaw_set_angle(0.0f);
+        system_delay_ms(1000U);
+        car_menu_open();
+        car_menu_render();
+        return;
+    }
+    if(CAR_TASK_ODOMETER_QUERY == task)
+    {
+        char line[24];
+        car_stop_and_open_menu();
+        sprintf(line, "ODO %.1f cm",
+                (double)odometer_get_cm(&car_context.odometer));
+        car_oled_show_string(0U, line);
+        system_delay_ms(1000U);
+        car_menu_open();
+        car_menu_render();
+        return;
+    }
+
+    car_context.active_task = task;
+    car_context.running_requested = 1U;
+    car_context.start_delay_tick = 0U;
+    car_context.stationary_hold_correcting = 0U;
+    car_context.yaw_target = mpu6050_yaw_get_angle();
+    angle_pid_reset(&car_context.angle_pid);
+    angle_pid_set_target(&car_context.angle_pid, car_context.yaw_target);
+    ball_car_init(&car_context.ball_car);
+    line_follow_init(&car_context.line_follow);
+    car_reset_speed_control();
+    car_menu_close();
 }
 
 static int16 car_rpm_to_x10(float rpm)
@@ -349,14 +283,6 @@ static void car_send_vision_status(
     if(motion_enabled)
     {
         status.flags |= VISION_STATUS_FLAG_ENABLED;
-    }
-    if(car_context.ball_output.magnet_on)
-    {
-        status.flags |= VISION_STATUS_FLAG_MAGNET_ON;
-    }
-    if(car_context.ball_output.payload_held)
-    {
-        status.flags |= VISION_STATUS_FLAG_PAYLOAD_HELD;
     }
     if(BALL_CAR_STATE_FAULT == car_context.ball_output.state)
     {
@@ -407,6 +333,9 @@ static void car_update_motor_control(
            - car_context.right_encoder_previous);
     car_context.left_encoder_previous = left_encoder_count;
     car_context.right_encoder_previous = right_encoder_count;
+    odometer_update(&car_context.odometer,
+                    left_encoder_delta,
+                    right_encoder_delta);
 
     left_duty = speed_pid_update(
         &car_context.left_speed_pid,
@@ -441,8 +370,8 @@ static void car_debug_log(
         log,
         "CAR run=%u state=%s fault=%s line=%02X err=%d "
         "vision=%u target=%u conf=%u xy=%u,%u wh=%u,%u "
-        "cmd[L=%d R=%d] rpm100[L=%ld R=%ld] "
-        "mag=%u payload=%u packets=%lu crc=%lu ovf=%lu\r\n",
+        "cmd[L=%d R=%d] rpm100[L=%ld R=%ld] yaw=%+.1f "
+        "odo=%.1f packets=%lu crc=%lu ovf=%lu\r\n",
         motion_enabled,
         ball_car_state_name(car_context.ball_output.state),
         ball_car_fault_name(car_context.ball_output.fault),
@@ -459,8 +388,8 @@ static void car_debug_log(
         (int)right_target_rpm,
         (long)(car_context.left_speed_pid.measured_rpm * 100.0f),
         (long)(car_context.right_speed_pid.measured_rpm * 100.0f),
-        car_context.ball_output.magnet_on,
-        car_context.ball_output.payload_held,
+        (double)car_context.yaw_angle,
+        (double)odometer_get_cm(&car_context.odometer),
         (unsigned long)car_context.vision.packet_count,
         (unsigned long)car_context.vision.crc_error_count,
         (unsigned long)car_context.vision.rx_overflow_count);
@@ -472,7 +401,6 @@ void car_app_init(void)
     memset(&car_context, 0, sizeof(car_context));
 
     uart_init(UART_1, 115200U, UART1_TX_B6, UART1_RX_B7);
-    uart_init(UART_3, 9600U, UART3_TX_B2, UART3_RX_B3);
     vision_uart_init();
 
     gpio_init(B16, GPO, 0U, GPO_PUSH_PULL);
@@ -485,8 +413,11 @@ void car_app_init(void)
     line_sensor_init();
     line_follow_init(&car_context.line_follow);
     ball_car_init(&car_context.ball_car);
-    magnet_driver_init();
+    angle_pid_init(&car_context.angle_pid);
+    odometer_init(&car_context.odometer);
+    mpu6050_yaw_init();
     car_oled_init();
+    car_menu_init(car_oled_fill, car_oled_show_string);
 
     gpio_set_level(A7, 0U);
     system_delay_ms(200);
@@ -498,26 +429,15 @@ void car_app_init(void)
         wheel_encoder_get_count(WHEEL_ENCODER_MOTOR2);
     car_context.ball_output.state = BALL_CAR_STATE_IDLE;
 
-    car_oled_show_string(0U, "TI BALL CAR READY");
-    car_oled_show_string(2U, "VISION UART2");
-    car_oled_show_string(4U, "1 START 0 STOP");
-    car_oled_show_string(6U, "2 RELEASE MAGNET");
-
-    car_ack_write("MSPM0 ball-car controller ready.\r\n");
+    car_menu_render();
+    car_debug_write("MSPM0 integrated controller ready.\r\n");
     car_debug_write(
-        "Vision UART2=115200 PA23(TX)/PA24(RX); "
-        "HC-05 UART3=9600 PB2/PB3.\r\n");
-    car_debug_write(
-        "Gray A0/A1/A2/OUT=PB25/PB18/PB21/PB22; "
-        "magnet MOSFET control=PB10.\r\n");
-    car_debug_write(
-        "Commands: 1=START (3 s delay), 0=STOP, "
-        "2=RELEASE while stopped.\r\n");
+        "Vision UART2=115200; control uses OLED four-key menu.\r\n");
 }
 
 void car_app_run(void)
 {
-    car_command_enum command;
+    car_task_t requested_task;
     ball_car_input_struct input;
     ball_car_state_enum previous_state;
     uint8 motion_enabled;
@@ -525,6 +445,8 @@ void car_app_run(void)
     float line_right_rpm;
     float left_target_rpm;
     float right_target_rpm;
+    float angle_diff_rpm;
+    float hold_error;
     char transition_log[128];
 
     while(1)
@@ -532,14 +454,23 @@ void car_app_run(void)
         system_delay_ms(SPEED_PID_BASE_PERIOD_MS);
         car_context.control_tick++;
 
-        command = car_bluetooth_query_command();
-        car_apply_command(command);
+        requested_task = car_menu_update();
+        car_apply_menu_task(requested_task);
 
         vision_uart_process(car_context.control_tick);
         vision_uart_get_snapshot(
             car_context.control_tick,
             &car_context.vision);
         line_sensor_read(&car_context.line_sensor);
+        if(car_context.running_requested)
+        {
+            mpu6050_yaw_update_fast();
+        }
+        else
+        {
+            mpu6050_yaw_update();
+        }
+        car_context.yaw_angle = mpu6050_yaw_get_angle();
 
         if(car_context.running_requested
            && (car_context.start_delay_tick
@@ -555,8 +486,10 @@ void car_app_run(void)
         line_left_rpm = 0.0f;
         line_right_rpm = 0.0f;
         if(motion_enabled
-           && ball_car_requires_line_follow(
-               &car_context.ball_car))
+           && (CAR_TASK_ANGLE_HOLD != car_context.active_task)
+           && ((CAR_TASK_PLAIN_LINE == car_context.active_task)
+               || ball_car_requires_line_follow(
+                   &car_context.ball_car)))
         {
             line_follow_update(
                 &car_context.line_follow,
@@ -567,7 +500,6 @@ void car_app_run(void)
 
         memset(&input, 0, sizeof(input));
         input.enabled = motion_enabled;
-        input.release_payload = car_context.release_requested;
         input.line_valid = car_context.line_sensor.line_valid;
         input.line_error = car_context.line_sensor.error;
         input.line_left_rpm = line_left_rpm;
@@ -594,17 +526,26 @@ void car_app_run(void)
             car_context.vision.target.frame_height;
 
         previous_state = car_context.ball_car.state;
-        ball_car_update(
-            &car_context.ball_car,
-            &input,
-            &car_context.ball_output);
-        car_context.release_requested = 0U;
+        if(CAR_TASK_LINE_FOLLOW == car_context.active_task)
+        {
+            ball_car_update(
+                &car_context.ball_car,
+                &input,
+                &car_context.ball_output);
+        }
+        else
+        {
+            car_context.ball_output.left_target_rpm = line_left_rpm;
+            car_context.ball_output.right_target_rpm = line_right_rpm;
+            car_context.ball_output.state = motion_enabled
+                ? BALL_CAR_STATE_LINE_FOLLOW
+                : BALL_CAR_STATE_IDLE;
+            car_context.ball_output.fault = BALL_CAR_FAULT_NONE;
+        }
 
         if((previous_state != car_context.ball_car.state)
-           && ((BALL_CAR_STATE_LINE_FOLLOW
-                == car_context.ball_car.state)
-               || (BALL_CAR_STATE_LINE_FOLLOW_CARRY
-                   == car_context.ball_car.state)))
+           && (BALL_CAR_STATE_LINE_FOLLOW
+               == car_context.ball_car.state))
         {
             line_follow_init(&car_context.line_follow);
         }
@@ -617,12 +558,58 @@ void car_app_run(void)
             motion_enabled
                 ? car_context.ball_output.right_target_rpm
                 : 0.0f;
-        magnet_driver_set(car_context.ball_output.magnet_on);
+        if(motion_enabled
+           && (CAR_TASK_ANGLE_HOLD == car_context.active_task))
+        {
+            angle_pid_set_target(&car_context.angle_pid,
+                                 car_context.yaw_target);
+            angle_diff_rpm = angle_pid_update(
+                &car_context.angle_pid,
+                car_context.yaw_angle,
+                ANGLE_PID_HOLD_KP,
+                ANGLE_PID_HOLD_KI,
+                ANGLE_PID_HOLD_KD,
+                ANGLE_PID_HOLD_OUTPUT_MAX,
+                ANGLE_PID_HOLD_INTEGRAL_MAX,
+                0.01f);
+            hold_error = car_context.angle_pid.error;
+            if(!car_context.stationary_hold_correcting
+               && ((hold_error <= -ANGLE_PID_HOLD_ENTER_DEG)
+                   || (hold_error >= ANGLE_PID_HOLD_ENTER_DEG)))
+            {
+                car_context.stationary_hold_correcting = 1U;
+            }
+            else if(car_context.stationary_hold_correcting
+                    && (hold_error > -ANGLE_PID_HOLD_EXIT_DEG)
+                    && (hold_error < ANGLE_PID_HOLD_EXIT_DEG))
+            {
+                car_context.stationary_hold_correcting = 0U;
+                angle_pid_reset(&car_context.angle_pid);
+            }
+            if(!car_context.stationary_hold_correcting)
+            {
+                angle_diff_rpm = 0.0f;
+            }
+            left_target_rpm = -angle_diff_rpm;
+            right_target_rpm = angle_diff_rpm;
+            speed_pid_set_start_duty(&car_context.left_speed_pid,
+                                     SPEED_PID_HOLD_START_DUTY);
+            speed_pid_set_start_duty(&car_context.right_speed_pid,
+                                     SPEED_PID_HOLD_START_DUTY);
+        }
+        else
+        {
+            speed_pid_set_start_duty(&car_context.left_speed_pid,
+                                     SPEED_PID_START_DUTY);
+            speed_pid_set_start_duty(&car_context.right_speed_pid,
+                                     SPEED_PID_START_DUTY);
+        }
         car_update_motor_control(
             left_target_rpm,
             right_target_rpm);
 
-        if(previous_state != car_context.ball_output.state)
+        if((CAR_TASK_LINE_FOLLOW == car_context.active_task)
+           && (previous_state != car_context.ball_output.state))
         {
             sprintf(
                 transition_log,
@@ -633,6 +620,13 @@ void car_app_run(void)
                 ball_car_fault_name(
                     car_context.ball_output.fault));
             car_debug_write(transition_log);
+        }
+
+        if((CAR_TASK_LINE_FOLLOW == car_context.active_task)
+           && (BALL_CAR_STATE_COMPLETE
+               == car_context.ball_output.state))
+        {
+            car_stop_and_open_menu();
         }
 
         car_context.status_send_ticks++;
@@ -656,7 +650,7 @@ void car_app_run(void)
         car_context.oled_update_ticks++;
         if((car_context.oled_update_ticks
             >= CAR_OLED_UPDATE_TICKS)
-           && !motion_enabled)
+           && !car_menu_is_open())
         {
             car_context.oled_update_ticks = 0U;
             car_oled_update_status(motion_enabled);

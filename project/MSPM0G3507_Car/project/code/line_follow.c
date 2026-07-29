@@ -66,15 +66,26 @@ void line_follow_update (line_follow_struct *follow,
             follow->lost_ticks ++;
         }
 
-        /*
-         * An all-white view is now a deliberate right-hand line search.
-         * Keep turning until any black-line channel becomes active; do not
-         * stop after a timeout. Ball approach/backtrack states bypass this
-         * line-follow module and therefore remain independent.
-         */
-        follow->mode = LINE_FOLLOW_MODE_WHITE_RIGHT;
-        *left_target_rpm = LINE_FOLLOW_WHITE_RIGHT_LEFT_RPM;
-        *right_target_rpm = LINE_FOLLOW_WHITE_RIGHT_RIGHT_RPM;
+        if(follow->lost_ticks <= LINE_FOLLOW_LOST_SEARCH_TICKS)
+        {
+            follow->mode = LINE_FOLLOW_MODE_LOST_SEARCH;
+            if(follow->last_valid_error < 0)
+            {
+                *left_target_rpm = LINE_FOLLOW_LOST_INNER_RPM;
+                *right_target_rpm = LINE_FOLLOW_LOST_OUTER_RPM;
+            }
+            else
+            {
+                *left_target_rpm = LINE_FOLLOW_LOST_OUTER_RPM;
+                *right_target_rpm = LINE_FOLLOW_LOST_INNER_RPM;
+            }
+        }
+        else
+        {
+            follow->mode = LINE_FOLLOW_MODE_LOST_STOP;
+            *left_target_rpm = 0.0f;
+            *right_target_rpm = 0.0f;
+        }
         follow->correction_rpm = 0.0f;
         return;
     }
