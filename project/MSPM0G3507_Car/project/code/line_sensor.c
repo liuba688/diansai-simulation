@@ -1,19 +1,28 @@
 #include "line_sensor.h"
-#include "zf_driver_delay.h"
 
-static void line_sensor_select (uint8 channel)
+static const gpio_pin_enum line_sensor_pins[8] =
 {
-    gpio_set_level(LINE_SENSOR_ADDRESS_0_PIN, channel & 0x01);
-    gpio_set_level(LINE_SENSOR_ADDRESS_1_PIN, (channel >> 1) & 0x01);
-    gpio_set_level(LINE_SENSOR_ADDRESS_2_PIN, (channel >> 2) & 0x01);
-}
+    LINE_SENSOR_OUT1_PIN,
+    LINE_SENSOR_OUT2_PIN,
+    LINE_SENSOR_OUT3_PIN,
+    LINE_SENSOR_OUT4_PIN,
+    LINE_SENSOR_OUT5_PIN,
+    LINE_SENSOR_OUT6_PIN,
+    LINE_SENSOR_OUT7_PIN,
+    LINE_SENSOR_OUT8_PIN
+};
 
 void line_sensor_init (void)
 {
-    gpio_init(LINE_SENSOR_ADDRESS_0_PIN, GPO, 0, GPO_PUSH_PULL);
-    gpio_init(LINE_SENSOR_ADDRESS_1_PIN, GPO, 0, GPO_PUSH_PULL);
-    gpio_init(LINE_SENSOR_ADDRESS_2_PIN, GPO, 0, GPO_PUSH_PULL);
-    gpio_init(LINE_SENSOR_DATA_PIN, GPI, 0, GPI_PULL_DOWN);
+    uint8 channel;
+
+    for(channel = 0; channel < 8; channel ++)
+    {
+        gpio_init(line_sensor_pins[channel],
+                  GPI,
+                  GPIO_LOW,
+                  GPI_PULL_DOWN);
+    }
 }
 
 void line_sensor_read (line_sensor_data_struct *data)
@@ -31,9 +40,7 @@ void line_sensor_read (line_sensor_data_struct *data)
 
     for(channel = 0; channel < 8; channel ++)
     {
-        line_sensor_select(channel);
-        system_delay_us(LINE_SENSOR_SETTLE_US);
-        active = (gpio_get_level(LINE_SENSOR_DATA_PIN)
+        active = (gpio_get_level(line_sensor_pins[channel])
                   == LINE_SENSOR_ACTIVE_LEVEL);
         if(active)
         {

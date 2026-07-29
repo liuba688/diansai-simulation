@@ -2,6 +2,14 @@
 __pycache__/
 *.py[cod]
 maixcam_ball_car/dist/
+tools/pid_test/.venv/
+tools/pid_test/logs/
+tools/pid_test/*.csv
+tools/pid_test/*.log
+tools/pid_test/*.json
+tools/pid_test/.pytest_cache/
+tools/pid_test/.mypy_cache/
+tools/pid_test/tmp/
 
 # CCS / Make build products
 project/MSPM0G3507_Car/project/ccs/build/
