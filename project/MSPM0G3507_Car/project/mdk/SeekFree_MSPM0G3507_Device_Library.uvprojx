@@ -464,6 +464,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\odometer.h</FilePath>
             </File>
+            <File>
+              <FileName>car_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\car_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>car_menu.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\car_menu.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

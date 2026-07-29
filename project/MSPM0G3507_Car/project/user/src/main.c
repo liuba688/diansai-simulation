@@ -38,6 +38,7 @@
 #include "mpu6050_yaw.h"
 #include "angle_pid.h"
 #include "odometer.h"
+#include "car_menu.h"
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
 // 第二步 project->clean  等待下方进度条走完
@@ -51,6 +52,93 @@
 static soft_iic_info_struct oled_iic;
 
 // UART1 保留有线调试，UART3(PB2/PB3)连接板载 UART4 接口上的 HC-05。
+
+// ---- Bluetooth 硬件诊断 ----
+// 通过 UART1 报告 HC-05 通信测试的每一步结果。
+// 需要万用表辅助测量 PB2 电压。
+static void bluetooth_self_test (void)
+{
+    uint8 rx_byte = 0;
+    uint8 has_rx = 0;
+    uint16 i;
+    char log_buf[128];
+
+    uart_write_string(UART_1, "\r\n======== BT SELF-TEST START ========\r\n");
+
+    // ===================== Phase 0: PB2 GPIO 硬件验证 =====================
+    // 先确认 PB2 引脚自身能否正常输出高低电平。
+    // 用万用表直流电压档测 PB2 对 GND。
+    uart_write_string(UART_1, "[BT-TEST] Phase 0: PB2 GPIO toggling...\r\n");
+    uart_write_string(UART_1, "  Measure PB2 vs GND with multimeter.\r\n");
+
+    // 将 PB2 临时切为 GPIO 输出，测试引脚驱动能力
+    gpio_init(B2, GPO, 1, GPO_PUSH_PULL);
+    uart_write_string(UART_1, "  PB2=HIGH (should be ~3.3V)...\r\n");
+    system_delay_ms(2000);
+
+    gpio_set_level(B2, 0);
+    uart_write_string(UART_1, "  PB2=LOW  (should be ~0.0V)...\r\n");
+    system_delay_ms(2000);
+
+    gpio_set_level(B2, 1);
+    uart_write_string(UART_1, "  PB2=HIGH again...\r\n");
+    system_delay_ms(2000);
+
+    // 重新初始化 PB2 为 UART3_TX
+    uart_init(UART_3, 9600, UART3_TX_B2, UART3_RX_B3);
+    uart_write_string(UART_1, "  PB2 restored to UART3_TX.\r\n");
+
+    // ===================== Phase 1: Basic TX =====================
+    uart_write_string(UART_1, "[BT-TEST] Phase 1: slow byte-by-byte TX...\r\n");
+
+    // 1a: 用已知简单字符 'U' (0x55 = 01010101) — 最易辨认的位模式
+    for(i = 0; i < 10; i++)
+    {
+        uart_write_byte(UART_3, 'U');
+        system_delay_ms(50);
+    }
+    uart_write_string(UART_3, "\r\n");
+    uart_write_string(UART_1, "  Sent 10x 'U' with 50ms gap. Phone should see 'UUUUUUUUUU'.\r\n");
+
+    // 1b: 用不同波特率发送看看哪个不花
+    system_delay_ms(200);
+    uart_write_string(UART_1, "[BT-TEST] Phase 1b: 'HELLO HC-05' at 9600...\r\n");
+    uart_write_string(UART_3, "HELLO HC-05\r\n");
+    uart_write_string(UART_1, "  Sent. If garbled, try 38400/115200 in AT mode.\r\n");
+
+    // ===================== Phase 2: RX Echo Test =====================
+    uart_write_string(UART_1, "[BT-TEST] Phase 2: echo (10s)...\r\n");
+    uart_write_string(UART_3, "ECHO READY\r\n");
+
+    for(i = 0; i < 200; i++)
+    {
+        has_rx = uart_query_byte(UART_3, &rx_byte);
+        if(has_rx)
+        {
+            sprintf(log_buf, "  UART1: RX=0x%02X '%c'\r\n",
+                    rx_byte, (rx_byte >= 32 && rx_byte <= 126) ? (char)rx_byte : '?');
+            uart_write_string(UART_1, log_buf);
+
+            uart_write_byte(UART_3, rx_byte);
+            uart_write_byte(UART_3, '\r');
+            uart_write_byte(UART_3, '\n');
+        }
+        system_delay_ms(50);
+    }
+    uart_write_string(UART_1, "  Echo window closed.\r\n");
+
+    // ===================== Phase 3: Report =====================
+    uart_write_string(UART_1, "[BT-TEST] Phase 3: hardware checklist\r\n");
+    uart_write_string(UART_1, "  [ ] PB2 HIGH was ~3.3V? If not -> PB2 pin or trace damaged.\r\n");
+    uart_write_string(UART_1, "  [ ] Phase 1 'UUUUUUUUUU' shows on phone? If not:\r\n");
+    uart_write_string(UART_1, "      -> Try AT mode: pull HC-05 KEY high, AT+UART? to check.\r\n");
+    uart_write_string(UART_1, "      -> Swap HC-05 module if available.\r\n");
+    uart_write_string(UART_1, "      -> Check PB2 trace from MCU to HC-05 RX pad.\r\n");
+    uart_write_string(UART_1, "  [ ] Echo works? If phone cmd works but echo garbled:\r\n");
+    uart_write_string(UART_1, "      -> Asymmetric HW fault: HC-05 RX pin damaged.\r\n");
+    uart_write_string(UART_1, "======== BT SELF-TEST END ========\r\n\r\n");
+}
+
 static void car_log_write (const char *text)
 {
     uart_write_string(UART_1, text);
@@ -64,10 +152,8 @@ static void car_debug_write (const char *text)
     uart_write_string(UART_3, text);
 }
 
-// 查询 HC-05 命令。
-// 返回 1=START, -1=STOP, 2=RESET_YAW, 3=ODO_QUERY,
-//      4=STATIONARY_HOLD, 5=HELP。
-static int8 car_bluetooth_query_command (void)
+// 查询 HC-05 命令，并转换为与实体按键相同的任务编号。
+static car_task_t car_bluetooth_query_command (void)
 {
     static char command[16];
     static uint8 command_length = 0;
@@ -79,32 +165,32 @@ static int8 car_bluetooth_query_command (void)
         if('1' == data)
         {
             command_length = 0;
-            return 1;
+            return CAR_TASK_LINE_FOLLOW;
         }
         if('0' == data)
         {
             command_length = 0;
-            return -1;
+            return CAR_TASK_STOP;
         }
         if(('h' == data) || ('H' == data))
         {
             command_length = 0;
-            return 4;
+            return CAR_TASK_ANGLE_HOLD;
         }
         if('r' == data || 'R' == data)
         {
             command_length = 0;
-            return 2;
+            return CAR_TASK_RESET_YAW;
         }
         if('d' == data || 'D' == data)
         {
             command_length = 0;
-            return 3;
+            return CAR_TASK_ODOMETER_QUERY;
         }
         if('?' == data)
         {
             command_length = 0;
-            return 5;
+            return CAR_TASK_HELP;
         }
 
         if(('\r' == data) || ('\n' == data))
@@ -118,23 +204,23 @@ static int8 car_bluetooth_query_command (void)
             command_length = 0;
             if(0 == strcmp(command, "START"))
             {
-                return 1;
+                return CAR_TASK_LINE_FOLLOW;
             }
             if(0 == strcmp(command, "STOP"))
             {
-                return -1;
+                return CAR_TASK_STOP;
             }
             if(0 == strcmp(command, "RESET"))
             {
-                return 2;
+                return CAR_TASK_RESET_YAW;
             }
             if(0 == strcmp(command, "DIST"))
             {
-                return 3;
+                return CAR_TASK_ODOMETER_QUERY;
             }
             if(0 == strcmp(command, "HELP"))
             {
-                return 5;
+                return CAR_TASK_HELP;
             }
             car_log_write("ERR CMD; send ?\r\n");
         }
@@ -152,27 +238,27 @@ static int8 car_bluetooth_query_command (void)
             if(0 == strcmp(command, "START"))
             {
                 command_length = 0;
-                return 1;
+                return CAR_TASK_LINE_FOLLOW;
             }
             if(0 == strcmp(command, "STOP"))
             {
                 command_length = 0;
-                return -1;
+                return CAR_TASK_STOP;
             }
             if(0 == strcmp(command, "RESET"))
             {
                 command_length = 0;
-                return 2;
+                return CAR_TASK_RESET_YAW;
             }
             if(0 == strcmp(command, "DIST"))
             {
                 command_length = 0;
-                return 3;
+                return CAR_TASK_ODOMETER_QUERY;
             }
             if(0 == strcmp(command, "HELP"))
             {
                 command_length = 0;
-                return 5;
+                return CAR_TASK_HELP;
             }
         }
         else
@@ -180,7 +266,7 @@ static int8 car_bluetooth_query_command (void)
             command_length = 0;
         }
     }
-    return 0;
+    return CAR_TASK_NONE;
 }
 
 // SSD1306 I2C 控制字：0x00 表示后续字节为命令。
@@ -296,7 +382,8 @@ int main (void)
     uint8 heartbeat_divider = 0;
     uint8 pid_log_divider = 0;
     uint8 line_follow_running = 0;
-    int8 bluetooth_command = 0;
+    car_task_t bluetooth_task = CAR_TASK_NONE;
+    car_task_t requested_task = CAR_TASK_NONE;
     uint16 control_tick = 0;
     uint16 start_delay_tick = 0;
     int32 motor1_encoder_count = 0;
@@ -322,6 +409,7 @@ int main (void)
     float mount_axis_y     = 0.0f;
     float mount_axis_z     = 1.0f;
     uint8 stationary_hold_active = 0;
+    uint8 stationary_hold_correcting = 0;
     /*
      * Detailed IMU telemetry is longer than 128 bytes.  The old buffer
      * overflowed during sprintf and could corrupt Bluetooth/parser state.
@@ -333,6 +421,9 @@ int main (void)
     // UART1：有线调试；UART3：板载 UART4 接口，连接 HC-05。
     uart_init(UART_1, 115200, UART1_TX_B6, UART1_RX_B7);
     uart_init(UART_3, 9600, UART3_TX_B2, UART3_RX_B3);
+
+    // ---- Bluetooth 硬件诊断（仅在调试时启用） ----
+    bluetooth_self_test();
 
     // 按终版载板测试要求，使用 PB16 作为 GPIO 心跳输出。
     // 使用翻转方式测试，不依赖外接 LED 是高电平点亮还是低电平点亮。
@@ -412,14 +503,28 @@ int main (void)
     motor1_encoder_previous = wheel_encoder_get_count(WHEEL_ENCODER_MOTOR1);
     motor2_encoder_previous = wheel_encoder_get_count(WHEEL_ENCODER_MOTOR2);
 
+    /*
+     * PB8/PB9/PB10/PB11 are provisional UP/DOWN/OK/BACK pins. The menu module
+     * keeps these mappings in one header so the real switch order can be
+     * corrected after a continuity test.
+     */
+    car_menu_init(car_oled_fill, car_oled_show_string);
+    car_menu_render();
+
     while(true)
     {
         system_delay_ms(SPEED_PID_BASE_PERIOD_MS);
         control_tick ++;
 
-        /* ---- bluetooth command dispatch ---- */
-        bluetooth_command = car_bluetooth_query_command();
-        if(bluetooth_command < 0)
+        /* ---- buttons and Bluetooth share one task dispatcher ---- */
+        requested_task = car_menu_update();
+        bluetooth_task = car_bluetooth_query_command();
+        if(CAR_TASK_NONE != bluetooth_task)
+        {
+            requested_task = bluetooth_task;
+        }
+
+        if(CAR_TASK_STOP == requested_task)
         {
             line_follow_running = 0;
             start_delay_tick    = 0;
@@ -427,13 +532,15 @@ int main (void)
             motor2_target_rpm   = 0.0f;
             angle_diff_rpm      = 0.0f;
             stationary_hold_active = 0;
+            stationary_hold_correcting = 0;
             angle_pid_reset(&angle_pid);
             speed_pid_reset(&motor1_pid);
             speed_pid_reset(&motor2_pid);
             tb6612_stop_all();
+            car_menu_open();
             car_log_write("OK STOP\r\n");
         }
-        else if(1 == bluetooth_command)
+        else if(CAR_TASK_LINE_FOLLOW == requested_task)
         {
             line_follow_running = 1;
             start_delay_tick    = 0;
@@ -441,6 +548,7 @@ int main (void)
             motor2_target_rpm   = 0.0f;
             angle_diff_rpm      = 0.0f;
             stationary_hold_active = 0;
+            stationary_hold_correcting = 0;
             yaw_target = mpu6050_yaw_get_angle();  /* lock current heading */
             angle_pid_set_target(&angle_pid, yaw_target);
             speed_pid_reset(&motor1_pid);
@@ -448,9 +556,52 @@ int main (void)
             motor1_encoder_previous = wheel_encoder_get_count(WHEEL_ENCODER_MOTOR1);
             motor2_encoder_previous = wheel_encoder_get_count(WHEEL_ENCODER_MOTOR2);
             tb6612_stop_all();
+            car_menu_close();
             car_log_write("OK START 3S\r\n");
         }
-        else if(2 == bluetooth_command)
+        else if(CAR_TASK_ANGLE_HOLD == requested_task)
+        {
+            /*
+             * Existing 'h' behavior: hold the heading at the moment the task
+             * starts. This is intentionally named ANGLE HOLD, not return-home.
+             */
+            if(!mpu6050_yaw_is_ready())
+            {
+                stationary_hold_active = 0;
+                stationary_hold_correcting = 0;
+                tb6612_stop_all();
+                car_menu_open();
+                car_log_write("ERR HOLD IMU\r\n");
+            }
+            else
+            {
+                line_follow_running = 0;
+                start_delay_tick = 0;
+                stationary_hold_active = 1;
+                stationary_hold_correcting = 0;
+                yaw_target = mpu6050_yaw_get_angle();
+                angle_pid_reset(&angle_pid);
+                angle_pid_set_target(&angle_pid, yaw_target);
+                speed_pid_reset(&motor1_pid);
+                speed_pid_reset(&motor2_pid);
+                car_menu_close();
+                car_log_write("OK HOLD; 0=EXIT\r\n");
+            }
+        }
+        else if((CAR_TASK_RESERVED_03 <= requested_task)
+                && (CAR_TASK_RESERVED_08 >= requested_task))
+        {
+            sprintf(uart_log, "EMPTY TASK: %s\r\n",
+                    car_menu_task_name(requested_task));
+            car_log_write(uart_log);
+            car_menu_open();
+        }
+
+        /*
+         * Legacy service commands remain Bluetooth-only because they are
+         * diagnostics rather than contest task selections.
+         */
+        if(CAR_TASK_RESET_YAW == bluetooth_task)
         {
             /*
              * A plain angle reset does not remove gyro temperature drift.
@@ -459,6 +610,7 @@ int main (void)
             line_follow_running = 0;
             start_delay_tick = 0;
             stationary_hold_active = 0;
+            stationary_hold_correcting = 0;
             motor1_target_rpm = 0.0f;
             motor2_target_rpm = 0.0f;
             speed_pid_reset(&motor1_pid);
@@ -472,7 +624,7 @@ int main (void)
             angle_pid_set_target(&angle_pid, yaw_target);
             car_log_write("OK CAL YAW=0\r\n");
         }
-        else if(3 == bluetooth_command)
+        else if(CAR_TASK_ODOMETER_QUERY == bluetooth_task)
         {
             /* query odometer */
             sprintf(uart_log, "ODO total=%.1f cm left=%.1f right=%.1f\r\n",
@@ -480,28 +632,7 @@ int main (void)
                     (double)odo.left_cm, (double)odo.right_cm);
             car_log_write(uart_log);
         }
-        else if(4 == bluetooth_command)
-        {
-            /*
-             * Explicit low-speed commissioning mode.  Lock the current
-             * heading; STOP remains an unconditional emergency exit.
-             */
-            if(!mpu6050_yaw_is_ready())
-            {
-                stationary_hold_active = 0;
-                tb6612_stop_all();
-                car_log_write("ERR HOLD IMU\r\n");
-                continue;
-            }
-            line_follow_running = 0;
-            start_delay_tick = 0;
-            stationary_hold_active = 1;
-            yaw_target = mpu6050_yaw_get_angle();
-            angle_pid_reset(&angle_pid);
-            angle_pid_set_target(&angle_pid, yaw_target);
-            car_log_write("OK HOLD; 0=EXIT\r\n");
-        }
-        else if(5 == bluetooth_command)
+        else if(CAR_TASK_HELP == bluetooth_task)
         {
             car_log_write("CMD:1 0 h r d ?\r\n");
         }
@@ -541,12 +672,28 @@ int main (void)
                 0.0127f);
             hold_error = angle_pid.error;
 
-            /* A dead band prevents gearbox chatter around the target. */
-            if((hold_error > -ANGLE_PID_HOLD_DEADBAND_DEG)
-               && (hold_error < ANGLE_PID_HOLD_DEADBAND_DEG))
+            /*
+             * Use two thresholds instead of resetting at one boundary.
+             * This prevents gyro noise from producing isolated motor kicks.
+             */
+            if(!stationary_hold_correcting)
+            {
+                if((hold_error <= -ANGLE_PID_HOLD_ENTER_DEG)
+                   || (hold_error >= ANGLE_PID_HOLD_ENTER_DEG))
+                {
+                    stationary_hold_correcting = 1;
+                }
+            }
+            else if((hold_error > -ANGLE_PID_HOLD_EXIT_DEG)
+                    && (hold_error < ANGLE_PID_HOLD_EXIT_DEG))
+            {
+                stationary_hold_correcting = 0;
+                angle_pid_reset(&angle_pid);
+            }
+
+            if(!stationary_hold_correcting)
             {
                 angle_diff_rpm = 0.0f;
-                angle_pid_reset(&angle_pid);
             }
 
             motor1_target_rpm = -angle_diff_rpm;
@@ -569,6 +716,17 @@ int main (void)
             line_follow_update(&line_follow, &line_sensor,
                                &motor1_target_rpm, &motor2_target_rpm);
             angle_diff_rpm = 0.0f;
+        }
+
+        if(stationary_hold_active)
+        {
+            speed_pid_set_start_duty(&motor1_pid, SPEED_PID_HOLD_START_DUTY);
+            speed_pid_set_start_duty(&motor2_pid, SPEED_PID_HOLD_START_DUTY);
+        }
+        else
+        {
+            speed_pid_set_start_duty(&motor1_pid, SPEED_PID_START_DUTY);
+            speed_pid_set_start_duty(&motor2_pid, SPEED_PID_START_DUTY);
         }
 
         speed_pid_set_target(&motor1_pid, motor1_target_rpm);
@@ -612,7 +770,8 @@ int main (void)
             heartbeat_divider = 0;
             gpio_toggle_level(B16);
 
-            /* OLED refresh every 500 ms */
+            /* OLED telemetry is hidden while the task selection menu is open. */
+            if(!car_menu_is_open())
             {
                 sprintf(uart_log, "L%+03d R%+03d",
                         (int)motor1_target_rpm, (int)motor2_target_rpm);
@@ -621,7 +780,14 @@ int main (void)
                 car_oled_show_string(2, uart_log);
                 if (stationary_hold_active)
                 {
-                    car_oled_show_string(4, "ANGL: PARK ");
+                    if(stationary_hold_correcting)
+                    {
+                        car_oled_show_string(4, "ANGL: CORR ");
+                    }
+                    else
+                    {
+                        car_oled_show_string(4, "ANGL: WAIT ");
+                    }
                 }
                 else if (line_follow_running)
                 {

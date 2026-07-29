@@ -7,6 +7,7 @@
 ".\objects\angle_pid.o"
 ".\objects\mpu6050_yaw.o"
 ".\objects\odometer.o"
+".\objects\car_menu.o"
 ".\objects\main.o"
 ".\objects\isr.o"
 ".\objects\zf_common_clock.o"

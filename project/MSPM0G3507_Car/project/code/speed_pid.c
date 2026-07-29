@@ -34,13 +34,16 @@ void speed_pid_init (speed_pid_struct *pid)
     pid->output = 0.0f;
     pid->error_1 = 0.0f;
     pid->error_2 = 0.0f;
+    pid->start_duty = SPEED_PID_START_DUTY;
 }
 
 void speed_pid_reset (speed_pid_struct *pid)
 {
     float target_rpm = pid->target_rpm;
+    float start_duty = pid->start_duty;
     speed_pid_init(pid);
     pid->target_rpm = target_rpm;
+    pid->start_duty = start_duty;
 }
 
 void speed_pid_set_target (speed_pid_struct *pid, float target_rpm)
@@ -49,9 +52,18 @@ void speed_pid_set_target (speed_pid_struct *pid, float target_rpm)
        || ((pid->target_rpm > 0.0f) && (target_rpm < 0.0f))
        || ((pid->target_rpm < 0.0f) && (target_rpm > 0.0f)))
     {
-        speed_pid_init(pid);
+        speed_pid_reset(pid);
     }
     pid->target_rpm = target_rpm;
+}
+
+void speed_pid_set_start_duty (speed_pid_struct *pid, float start_duty)
+{
+    if(start_duty < 0.0f)
+    {
+        start_duty = 0.0f;
+    }
+    pid->start_duty = start_duty;
 }
 
 int16 speed_pid_update (speed_pid_struct *pid, int32 encoder_delta,
@@ -82,7 +94,7 @@ int16 speed_pid_update (speed_pid_struct *pid, int32 encoder_delta,
     pid->error_2 = pid->error_1;
     pid->error_1 = error;
 
-    drive_output = speed_pid_sign(pid->target_rpm) * SPEED_PID_START_DUTY
+    drive_output = speed_pid_sign(pid->target_rpm) * pid->start_duty
                  + pid->output;
     drive_output = speed_pid_limit(drive_output, SPEED_PID_OUTPUT_LIMIT);
 

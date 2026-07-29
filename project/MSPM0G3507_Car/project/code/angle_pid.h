@@ -26,10 +26,16 @@
 /* ---------- stationary hold: deliberately gentle for first real-car test ---------- */
 #define ANGLE_PID_HOLD_KP               (0.8f)
 #define ANGLE_PID_HOLD_KI               (0.0f)
-#define ANGLE_PID_HOLD_KD               (0.05f)
+#define ANGLE_PID_HOLD_KD               (0.0f)
 #define ANGLE_PID_HOLD_OUTPUT_MAX       (18.0f)  /* RPM */
 #define ANGLE_PID_HOLD_INTEGRAL_MAX     (8.0f)
-#define ANGLE_PID_HOLD_DEADBAND_DEG     (1.5f)
+/*
+ * Hysteresis keeps gyro noise near the threshold from repeatedly starting
+ * and stopping both gearmotors.  Correction starts at the wider threshold
+ * and continues until the yaw is back inside the narrower threshold.
+ */
+#define ANGLE_PID_HOLD_ENTER_DEG        (2.5f)
+#define ANGLE_PID_HOLD_EXIT_DEG         (1.0f)
 
 /* ---------- generic ---------- */
 #define ANGLE_PID_BASE_PERIOD_MS        (10)

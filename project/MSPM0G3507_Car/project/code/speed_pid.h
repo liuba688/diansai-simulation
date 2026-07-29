@@ -27,6 +27,7 @@
 #define SPEED_PID_MOTOR2_KD                (0.0f)
 #define SPEED_PID_OUTPUT_LIMIT             (8000.0f)
 #define SPEED_PID_START_DUTY               (1000.0f)
+#define SPEED_PID_HOLD_START_DUTY          (600.0f)
 #define SPEED_PID_FILTER_ALPHA             (0.25f)
 
 typedef struct
@@ -37,11 +38,13 @@ typedef struct
     float output;
     float error_1;
     float error_2;
+    float start_duty;
 } speed_pid_struct;
 
 void  speed_pid_init       (speed_pid_struct *pid);
 void  speed_pid_reset      (speed_pid_struct *pid);
 void  speed_pid_set_target (speed_pid_struct *pid, float target_rpm);
+void  speed_pid_set_start_duty(speed_pid_struct *pid, float start_duty);
 int16 speed_pid_update     (speed_pid_struct *pid, int32 encoder_delta,
                             float kp, float ki, float kd);
 
