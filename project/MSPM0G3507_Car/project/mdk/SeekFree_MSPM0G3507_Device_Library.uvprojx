@@ -415,6 +415,16 @@
               <FilePath>..\code\speed_pid.h</FilePath>
             </File>
             <File>
+              <FileName>pid_test_serial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\pid_test_serial.c</FilePath>
+            </File>
+            <File>
+              <FileName>pid_test_serial.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\pid_test_serial.h</FilePath>
+            </File>
+            <File>
               <FileName>line_sensor.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\code\line_sensor.c</FilePath>

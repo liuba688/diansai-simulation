@@ -19,16 +19,21 @@
 #define SPEED_PID_CONTROL_DIVIDER          (SPEED_PID_PERIOD_MS / SPEED_PID_BASE_PERIOD_MS)
 
 // 两轮机械特性不同，增益必须允许独立整定。
-#define SPEED_PID_MOTOR1_KP                (10.0f)
+#define SPEED_PID_MOTOR1_KP                (12.0f)
 #define SPEED_PID_MOTOR1_KI                (1.0f)
 #define SPEED_PID_MOTOR1_KD                (0.0f)
-#define SPEED_PID_MOTOR2_KP                (10.0f)
+#define SPEED_PID_MOTOR2_KP                (12.0f)
 #define SPEED_PID_MOTOR2_KI                (1.0f)
 #define SPEED_PID_MOTOR2_KD                (0.0f)
-#define SPEED_PID_OUTPUT_LIMIT             (8000.0f)
+#define SPEED_PID_OUTPUT_LIMIT             (9000.0f)
 #define SPEED_PID_START_DUTY               (1000.0f)
 #define SPEED_PID_HOLD_START_DUTY          (600.0f)
 #define SPEED_PID_FILTER_ALPHA             (0.25f)
+#define SPEED_PID_DECEL_RELEASE_DUTY_PER_RPM (4.0f)
+#define SPEED_PID_DECEL_RELEASE_MAX_DUTY   (40.0f)
+#define SPEED_PID_LARGE_DECEL_THRESHOLD_RPM  (8.0f)
+#define SPEED_PID_LARGE_DECEL_DUTY_PER_RPM  (8.0f)
+#define SPEED_PID_LARGE_DECEL_MAX_DUTY     (160.0f)
 
 typedef struct
 {

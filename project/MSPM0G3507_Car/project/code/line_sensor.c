@@ -2,14 +2,15 @@
 
 static const gpio_pin_enum line_sensor_pins[8] =
 {
-    LINE_SENSOR_OUT1_PIN,
-    LINE_SENSOR_OUT2_PIN,
-    LINE_SENSOR_OUT3_PIN,
-    LINE_SENSOR_OUT4_PIN,
-    LINE_SENSOR_OUT5_PIN,
-    LINE_SENSOR_OUT6_PIN,
+    /* Software order is left to right: bit0=OUT8 ... bit7=OUT1. */
+    LINE_SENSOR_OUT8_PIN,
     LINE_SENSOR_OUT7_PIN,
-    LINE_SENSOR_OUT8_PIN
+    LINE_SENSOR_OUT6_PIN,
+    LINE_SENSOR_OUT5_PIN,
+    LINE_SENSOR_OUT4_PIN,
+    LINE_SENSOR_OUT3_PIN,
+    LINE_SENSOR_OUT2_PIN,
+    LINE_SENSOR_OUT1_PIN
 };
 
 void line_sensor_init (void)

@@ -48,11 +48,53 @@ void speed_pid_reset (speed_pid_struct *pid)
 
 void speed_pid_set_target (speed_pid_struct *pid, float target_rpm)
 {
+    float old_abs;
+    float new_abs;
+    float release_duty;
+
     if((0.0f == target_rpm)
        || ((pid->target_rpm > 0.0f) && (target_rpm < 0.0f))
        || ((pid->target_rpm < 0.0f) && (target_rpm > 0.0f)))
     {
         speed_pid_reset(pid);
+    }
+    else
+    {
+        old_abs = (pid->target_rpm >= 0.0f)
+                ? pid->target_rpm : -pid->target_rpm;
+        new_abs = (target_rpm >= 0.0f) ? target_rpm : -target_rpm;
+
+        /*
+         * Release only a bounded amount of retained PI duty when slowing.
+         * Proportional scaling on every small line correction made straight
+         * running lose too much accumulated output and feel intermittent.
+         */
+        if((old_abs > 1.0f) && ((old_abs - new_abs) >= 0.5f))
+        {
+            if((old_abs - new_abs)
+               >= SPEED_PID_LARGE_DECEL_THRESHOLD_RPM)
+            {
+                release_duty = (old_abs - new_abs)
+                             * SPEED_PID_LARGE_DECEL_DUTY_PER_RPM;
+                if(release_duty > SPEED_PID_LARGE_DECEL_MAX_DUTY)
+                {
+                    release_duty = SPEED_PID_LARGE_DECEL_MAX_DUTY;
+                }
+            }
+            else
+            {
+                release_duty = (old_abs - new_abs)
+                             * SPEED_PID_DECEL_RELEASE_DUTY_PER_RPM;
+                if(release_duty > SPEED_PID_DECEL_RELEASE_MAX_DUTY)
+                {
+                    release_duty = SPEED_PID_DECEL_RELEASE_MAX_DUTY;
+                }
+            }
+            pid->output -= speed_pid_sign(pid->target_rpm)
+                         * release_duty;
+            pid->output = speed_pid_limit(pid->output,
+                                          SPEED_PID_OUTPUT_LIMIT);
+        }
     }
     pid->target_rpm = target_rpm;
 }

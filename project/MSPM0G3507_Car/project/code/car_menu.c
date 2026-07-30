@@ -23,6 +23,7 @@ typedef struct
 {
     uint8 raw_level;
     uint8 stable_level;
+    uint8 released_level;
     uint8 debounce_ticks;
     uint16 hold_ticks;
     uint8 short_event;
@@ -60,11 +61,14 @@ static uint8 menu_open;
 static uint8 selected_index;
 static uint8 first_visible_index;
 static uint8 redraw_pending;
+static uint8 raw_key_mask;
 
 static void car_menu_scan_key (uint8 index)
 {
     car_menu_key_state_t *key = &key_states[index];
     uint8 level = gpio_get_level(car_menu_key_pins[index]);
+    uint8 pressed_level =
+        (GPIO_HIGH == key->released_level) ? GPIO_LOW : GPIO_HIGH;
 
     if(level != key->raw_level)
     {
@@ -79,12 +83,12 @@ static void car_menu_scan_key (uint8 index)
             if(key->stable_level != level)
             {
                 key->stable_level = level;
-                if(GPIO_LOW == level)
+                if(pressed_level == level)
                 {
                     key->hold_ticks = 0;
                     key->long_event = 0;
                 }
-                else
+                else if(key->released_level == level)
                 {
                     if((key->hold_ticks < CAR_MENU_LONG_PRESS_TICKS)
                        && !key->long_event)
@@ -98,7 +102,7 @@ static void car_menu_scan_key (uint8 index)
         }
     }
 
-    if(GPIO_LOW == key->stable_level)
+    if(pressed_level == key->stable_level)
     {
         if(key->hold_ticks < CAR_MENU_LONG_PRESS_TICKS)
         {
@@ -151,12 +155,19 @@ void car_menu_init (car_menu_clear_fn clear_screen, car_menu_text_fn show_text)
     selected_index = 0;
     first_visible_index = 0;
     redraw_pending = 1;
+    raw_key_mask = 0U;
 
     for(i = 0; i < CAR_MENU_KEY_COUNT; i ++)
     {
         gpio_init(car_menu_key_pins[i], GPI, GPIO_HIGH, GPI_PULL_UP);
-        key_states[i].raw_level = GPIO_HIGH;
-        key_states[i].stable_level = GPIO_HIGH;
+    }
+    system_delay_ms(2U);
+    for(i = 0; i < CAR_MENU_KEY_COUNT; i ++)
+    {
+        key_states[i].raw_level =
+            gpio_get_level(car_menu_key_pins[i]);
+        key_states[i].stable_level = key_states[i].raw_level;
+        key_states[i].released_level = key_states[i].raw_level;
         key_states[i].debounce_ticks = 0;
         key_states[i].hold_ticks = 0;
         key_states[i].short_event = 0;
@@ -167,12 +178,29 @@ void car_menu_init (car_menu_clear_fn clear_screen, car_menu_text_fn show_text)
 car_task_t car_menu_update (void)
 {
     uint8 i;
+    uint8 new_raw_mask = 0U;
 
     for(i = 0; i < CAR_MENU_KEY_COUNT; i ++)
     {
         car_menu_scan_key(i);
+        if(GPIO_HIGH == gpio_get_level(car_menu_key_pins[i]))
+        {
+            new_raw_mask |= (uint8)(1U << i);
+        }
+    }
+    if(new_raw_mask != raw_key_mask)
+    {
+        raw_key_mask = new_raw_mask;
+        redraw_pending = 1U;
     }
 
+#if CAR_MENU_KEY_DIAGNOSTIC_MODE
+    if(redraw_pending)
+    {
+        car_menu_render();
+    }
+    return CAR_TASK_NONE;
+#else
     /*
      * BACK is always a safety stop. A long press fires without waiting for
      * release; a short press fires on release.
@@ -230,6 +258,7 @@ car_task_t car_menu_update (void)
     }
 
     return CAR_TASK_NONE;
+#endif
 }
 
 void car_menu_open (void)
@@ -256,6 +285,27 @@ void car_menu_render (void)
 
     menu_clear_screen(0x00);
 
+#if CAR_MENU_KEY_DIAGNOSTIC_MODE
+    {
+        char diagnostic_line[22];
+        static const char hex_digits[] = "0123456789ABCDEF";
+
+        menu_show_text(0U, "KEY TEST 0730");
+        sprintf(diagnostic_line, "UP B13:%u DN B23:%u",
+                (raw_key_mask >> CAR_MENU_KEY_UP) & 1U,
+                (raw_key_mask >> CAR_MENU_KEY_DOWN) & 1U);
+        menu_show_text(2U, diagnostic_line);
+        sprintf(diagnostic_line, "OK B26:%u BK B27:%u",
+                (raw_key_mask >> CAR_MENU_KEY_OK) & 1U,
+                (raw_key_mask >> CAR_MENU_KEY_BACK) & 1U);
+        menu_show_text(4U, diagnostic_line);
+        sprintf(diagnostic_line, "RAW K:%c PRESS KEY",
+                hex_digits[raw_key_mask & 0x0FU]);
+        menu_show_text(6U, diagnostic_line);
+        redraw_pending = 0U;
+        return;
+    }
+#else
     for(row = 0; row < CAR_MENU_VISIBLE_ROWS; row ++)
     {
         uint8 item_index = first_visible_index + row;
@@ -286,6 +336,7 @@ void car_menu_render (void)
     }
 
     redraw_pending = 0;
+#endif
 }
 
 uint8 car_menu_is_open (void)

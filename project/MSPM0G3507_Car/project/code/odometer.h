@@ -6,14 +6,20 @@
 /*
  * Encoder Odometer — cumulative distance from wheel encoder pulses.
  *
- * Wheel: 66mm dia => 207.3mm circumference
+ * Loaded rolling calibration: 10 revolutions = 1950mm
  * Encoder: 2450 count/rev, AB 4x
  */
 
-#define ODO_WHEEL_DIAMETER_MM           (66.0f)
-#define ODO_WHEEL_CIRCUMFERENCE_MM      (3.14159265f * ODO_WHEEL_DIAMETER_MM)
+#define ODO_WHEEL_CIRCUMFERENCE_MM      (195.0f)
+#define ODO_WHEEL_DIAMETER_MM           (ODO_WHEEL_CIRCUMFERENCE_MM / 3.14159265f)
 #define ODO_COUNTS_PER_REV              (2450.0f)
 #define ODO_MM_PER_COUNT                (ODO_WHEEL_CIRCUMFERENCE_MM / ODO_COUNTS_PER_REV)
+
+/* Measured chassis and standard-track geometry; feedforward remains disabled. */
+#define CAR_TRACK_WIDTH_MM              (209.0f)
+#define CAR_LINE_SENSOR_PREVIEW_MM      (219.0f)
+#define CAR_LINE_SENSOR_PITCH_MM        (10.0f)
+#define CAR_STANDARD_CURVE_RADIUS_MM    (500.0f)
 
 /* ---------- struct ---------- */
 typedef struct

@@ -48,7 +48,7 @@
  * The previous module used 1.268, which must not be reused after replacing
  * the IMU. Start at 1.0 and recalibrate with reliable +/-90 and 360 deg tests.
  */
-#define MPU6500_YAW_CALIBRATION_SCALE    (1.000f)
+#define MPU6500_YAW_CALIBRATION_SCALE    (1.172f)
 
 /* ---------- drift compensation ---------- */
 #define MPU6500_DRIFT_ALPHA             (0.001f)

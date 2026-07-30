@@ -8,6 +8,7 @@ import csv
 import json
 import math
 import statistics
+import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -28,10 +29,13 @@ except ImportError as exc:
     raise SystemExit(10) from exc
 
 
-FRAME_PREFIX = "@PID,1,"
+FRAME_PREFIXES = ("@PID,1,", "@PID,2,", "@PID,3,")
 STOP_COMMAND = b"@PIDTEST,STOP\n"
-OUTPUT_LIMIT = 8000.0
+PING_COMMAND = b"@PIDTEST,PING\n"
+ENCODER_COMMAND = b"@PIDTEST,ENCODER\n"
+OUTPUT_LIMIT = 9000.0
 MIN_VALID_SAMPLES = 20
+HANDSHAKE_TIMEOUT_S = 10.0
 CSV_FIELDS = [
     "timestamp_ms",
     "left_target_rpm",
@@ -43,6 +47,13 @@ CSV_FIELDS = [
     "left_error_rpm",
     "right_error_rpm",
     "enabled",
+    "line_mask",
+    "line_error",
+    "line_state",
+    "straight_time_ms",
+    "curve_time_ms",
+    "sharp_time_ms",
+    "lost_time_ms",
 ]
 
 
@@ -58,14 +69,28 @@ class Sample:
     left_error_rpm: float
     right_error_rpm: float
     enabled: int
+    line_mask: int = 0
+    line_error: int = 0
+    line_state: int = 0
+    straight_time_ms: int = 0
+    curve_time_ms: int = 0
+    sharp_time_ms: int = 0
+    lost_time_ms: int = 0
 
 
 def parse_frame(text: str) -> Sample | None:
-    if not text.startswith(FRAME_PREFIX):
+    if not text.startswith(FRAME_PREFIXES):
         return None
     parts = text.strip().split(",")
-    if len(parts) != 12:
-        raise ValueError(f"expected 12 fields, got {len(parts)}")
+    version = int(parts[1])
+    expected_fields = {1: 12, 2: 18, 3: 19}.get(version)
+    if expected_fields is None:
+        raise ValueError(f"unsupported protocol version {version}")
+    if len(parts) != expected_fields:
+        raise ValueError(
+            f"expected {expected_fields} fields for protocol {version}, "
+            f"got {len(parts)}"
+        )
     values = parts[2:]
     sample = Sample(
         timestamp_ms=int(values[0]),
@@ -78,12 +103,26 @@ def parse_frame(text: str) -> Sample | None:
         left_error_rpm=float(values[7]),
         right_error_rpm=float(values[8]),
         enabled=int(values[9]),
+        line_mask=int(values[10]) if version >= 2 else 0,
+        line_error=int(values[11]) if version >= 2 else 0,
+        line_state=int(values[12]) if version >= 2 else 0,
+        straight_time_ms=int(values[13]) if version >= 2 else 0,
+        curve_time_ms=int(values[14]) if version >= 3 else 0,
+        sharp_time_ms=int(values[15] if version >= 3 else values[14])
+        if version >= 2 else 0,
+        lost_time_ms=int(values[16] if version >= 3 else values[15])
+        if version >= 2 else 0,
     )
     numeric = asdict(sample).values()
     if not all(math.isfinite(float(value)) for value in numeric):
         raise ValueError("non-finite numeric value")
     if sample.enabled not in (0, 1):
         raise ValueError("enabled must be 0 or 1")
+    if not 0 <= sample.line_mask <= 0xFF:
+        raise ValueError("line_mask must be 0..255")
+    valid_states = (0, 1, 2, 3) if version >= 3 else (0, 1, 2)
+    if sample.line_state not in valid_states:
+        raise ValueError("invalid line_state for protocol version")
     return sample
 
 
@@ -232,6 +271,12 @@ def analyze(samples: Sequence[Sample]) -> dict:
         "nominal_sample_rate_hz": sample_rate,
         "effective_sample_rate_hz": effective_rate,
         "median_sample_period_ms": expected_period,
+        "line_state_time_ms": {
+            "straight": active[-1].straight_time_ms,
+            "curve": active[-1].curve_time_ms,
+            "sharp": active[-1].sharp_time_ms,
+            "lost": active[-1].lost_time_ms,
+        },
         "composite_score": round(max(0.0, score), 1),
         "score_note": "diagnostic 0-100 score; compare runs under identical conditions",
     }
@@ -273,6 +318,12 @@ def print_summary(result: dict) -> None:
         f"{result['mean_wheel_speed_difference_rpm']:.3f} rpm / "
         f"{result['output_saturation_percent']:.2f}%"
     )
+    states = result["line_state_time_ms"]
+    print(
+        "  line state ms straight/curve/sharp/lost: "
+        f"{states['straight']} / {states['curve']} / "
+        f"{states['sharp']} / {states['lost']}"
+    )
     print(f"  composite score: {result['composite_score']}/100")
 
 
@@ -286,6 +337,7 @@ def run_capture(args: argparse.Namespace) -> int:
     result_path = output_dir / f"{stem}.json"
     samples: list[Sample] = []
     format_errors = 0
+    display_sample_counter = 0
     last_data_at = time.monotonic()
     started_at = time.monotonic()
     max_runtime = args.duration + args.start_delay_allowance + 5.0
@@ -299,6 +351,50 @@ def run_capture(args: argparse.Namespace) -> int:
             write_timeout=1.0,
         )
         device.reset_input_buffer()
+        device.write(PING_COMMAND)
+        device.flush()
+        handshake_deadline = time.monotonic() + HANDSHAKE_TIMEOUT_S
+        next_ping_at = time.monotonic() + 1.0
+        handshake_ready = False
+        while time.monotonic() < handshake_deadline:
+            reply = device.readline()
+            if not reply:
+                if time.monotonic() >= next_ping_at:
+                    device.write(PING_COMMAND)
+                    device.flush()
+                    next_ping_at = time.monotonic() + 1.0
+                continue
+            reply_text = reply.decode("utf-8", errors="replace").strip()
+            print(reply_text)
+            if reply_text.startswith("@PIDACK,1,READY,"):
+                handshake_ready = True
+                break
+        if not handshake_ready:
+            raise RuntimeError(
+                "board did not acknowledge PID test protocol; "
+                "START was not sent (check firmware, UART wiring, and baud rate)"
+            )
+        if args.kp is not None:
+            gains_command = (
+                f"@PIDTEST,GAINS,{args.kp:.3f},{args.ki:.3f},{args.kd:.3f}\n"
+            )
+            device.write(gains_command.encode("ascii"))
+            device.flush()
+            gains_deadline = time.monotonic() + 2.0
+            gains_ack = False
+            while time.monotonic() < gains_deadline:
+                reply = device.readline()
+                if not reply:
+                    continue
+                reply_text = reply.decode("utf-8", errors="replace").strip()
+                print(reply_text)
+                if reply_text.startswith("@PIDACK,1,GAINS,"):
+                    gains_ack = True
+                    break
+                if reply_text.startswith("@PIDACK,1,ERROR,"):
+                    raise RuntimeError(f"board rejected PID gains: {reply_text}")
+            if not gains_ack:
+                raise RuntimeError("board did not confirm PID gains; START was not sent")
         command = (
             f"@PIDTEST,START,{args.target:.3f},"
             f"{min(120000, int((args.duration + args.start_delay_allowance) * 1000))}\n"
@@ -320,8 +416,7 @@ def run_capture(args: argparse.Namespace) -> int:
                 text = data.decode("utf-8", errors="replace").strip()
                 raw.write(text + "\n")
                 raw.flush()
-                print(text)
-                if text.startswith(FRAME_PREFIX):
+                if text.startswith(FRAME_PREFIXES):
                     try:
                         sample = parse_frame(text)
                     except (ValueError, OverflowError):
@@ -330,8 +425,14 @@ def run_capture(args: argparse.Namespace) -> int:
                     if sample is not None:
                         samples.append(sample)
                         last_data_at = time.monotonic()
+                        display_sample_counter += 1
+                        if display_sample_counter % 10 == 0:
+                            print(text)
                 elif text.startswith("@PIDACK,"):
+                    print(text)
                     last_data_at = time.monotonic()
+                elif text:
+                    print(text)
     except SerialException as exc:
         message = str(exc)
         hint = (
@@ -360,6 +461,10 @@ def run_capture(args: argparse.Namespace) -> int:
             "raw_log": str(raw_path.resolve()),
             "csv": str(csv_path.resolve()),
             "format_errors": format_errors,
+            "pid_gains": (
+                {"kp": args.kp, "ki": args.ki, "kd": args.kd}
+                if args.kp is not None else None
+            ),
         }
     )
     result_path.write_text(
@@ -369,6 +474,208 @@ def run_capture(args: argparse.Namespace) -> int:
     print_summary(result)
     print("RESULT_JSON=" + json.dumps(result, ensure_ascii=False))
     print(f"Result file: {result_path.resolve()}")
+    return 0
+
+
+def set_board_gains(port: str, baud: int, gains: tuple[float, float, float]) -> None:
+    kp, ki, kd = gains
+    with serial.Serial(port, baud, timeout=0.2, write_timeout=1.0) as device:
+        device.reset_input_buffer()
+        device.write(PING_COMMAND)
+        device.flush()
+        deadline = time.monotonic() + HANDSHAKE_TIMEOUT_S
+        next_ping_at = time.monotonic() + 1.0
+        while time.monotonic() < deadline:
+            text = device.readline().decode("utf-8", errors="replace").strip()
+            if text.startswith("@PIDACK,1,READY,"):
+                break
+            if time.monotonic() >= next_ping_at:
+                device.write(PING_COMMAND)
+                device.flush()
+                next_ping_at = time.monotonic() + 1.0
+        else:
+            raise RuntimeError("board did not acknowledge before applying best gains")
+        device.write(
+            f"@PIDTEST,GAINS,{kp:.3f},{ki:.3f},{kd:.3f}\n".encode("ascii")
+        )
+        device.flush()
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline:
+            text = device.readline().decode("utf-8", errors="replace").strip()
+            if text.startswith("@PIDACK,1,GAINS,"):
+                device.write(STOP_COMMAND)
+                device.flush()
+                return
+            if text.startswith("@PIDACK,1,ERROR,"):
+                raise RuntimeError(f"board rejected best gains: {text}")
+    raise RuntimeError("board did not confirm best gains")
+
+
+def run_auto_tune(args: argparse.Namespace) -> int:
+    port = choose_port(args.port, True)
+    base_kp = args.kp if args.kp is not None else 10.0
+    base_ki = args.ki if args.ki is not None else 1.0
+    base_kd = args.kd if args.kd is not None else 0.0
+    candidates = [
+        (base_kp, base_ki, base_kd),
+        (min(30.0, base_kp + 2.0), base_ki, base_kd),
+        (min(30.0, base_kp + 4.0), base_ki, base_kd),
+        (min(30.0, base_kp + 2.0), max(0.0, base_ki - 0.2), base_kd),
+        (min(30.0, base_kp + 4.0), max(0.0, base_ki - 0.2), base_kd),
+        (min(30.0, base_kp + 2.0), base_ki, min(2.0, base_kd + 0.15)),
+    ][: args.max_runs]
+    session_dir = (
+        Path(args.output_dir)
+        / ("autotune_" + datetime.now().strftime("%Y%m%d_%H%M%S"))
+    )
+    session_dir.mkdir(parents=True, exist_ok=True)
+    results = []
+    print(
+        f"Auto-tune: {len(candidates)} bounded runs, target={args.target:g} rpm, "
+        f"{args.duration:g}s each. Keep wheels raised and stay at the power switch."
+    )
+    for index, (kp, ki, kd) in enumerate(candidates, start=1):
+        run_dir = session_dir / f"run_{index:02d}_kp{kp:g}_ki{ki:g}_kd{kd:g}"
+        command = [
+            sys.executable,
+            str(Path(__file__).resolve()),
+            "--port", port,
+            "--baud", str(args.baud),
+            "--duration", str(args.duration),
+            "--target", str(args.target),
+            "--output-dir", str(run_dir),
+            "--non-interactive",
+            "--kp", str(kp),
+            "--ki", str(ki),
+            "--kd", str(kd),
+        ]
+        print(f"\n=== AUTO RUN {index}/{len(candidates)}: Kp={kp}, Ki={ki}, Kd={kd} ===")
+        completed = subprocess.run(command, check=False)
+        if completed.returncode != 0:
+            print("Auto-tune aborted after a failed run; stop was attempted.")
+            return 2
+        json_files = sorted(run_dir.glob("*.json"))
+        if not json_files:
+            print("Auto-tune aborted: run produced no JSON result.", file=sys.stderr)
+            return 2
+        result = json.loads(json_files[-1].read_text(encoding="utf-8"))
+        results.append(
+            {
+                "kp": kp,
+                "ki": ki,
+                "kd": kd,
+                "score": result["composite_score"],
+                "result_file": str(json_files[-1].resolve()),
+            }
+        )
+    best = max(results, key=lambda item: item["score"])
+    set_board_gains(port, args.baud, (best["kp"], best["ki"], best["kd"]))
+    summary = {
+        "status": "ok",
+        "mode": "auto_tune",
+        "target_rpm": args.target,
+        "runs": results,
+        "best": best,
+        "note": "best gains applied to RAM; reset restores firmware defaults",
+    }
+    summary_path = session_dir / "autotune_result.json"
+    summary_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(
+        f"\nBEST: Kp={best['kp']}, Ki={best['ki']}, Kd={best['kd']}, "
+        f"score={best['score']}. Applied to board RAM."
+    )
+    print("RESULT_JSON=" + json.dumps(summary, ensure_ascii=False))
+    return 0
+
+
+def run_encoder_test(args: argparse.Namespace) -> int:
+    port = choose_port(args.port, args.non_interactive)
+    device = None
+    rows: list[list[int]] = []
+    try:
+        device = serial.Serial(
+            port=port,
+            baudrate=args.baud,
+            timeout=0.2,
+            write_timeout=1.0,
+        )
+        device.reset_input_buffer()
+        device.write(PING_COMMAND)
+        device.flush()
+        deadline = time.monotonic() + HANDSHAKE_TIMEOUT_S
+        next_ping_at = time.monotonic() + 1.0
+        ready = False
+        while time.monotonic() < deadline:
+            text = device.readline().decode("utf-8", errors="replace").strip()
+            if text.startswith("@PIDACK,1,READY,"):
+                ready = True
+                break
+            if time.monotonic() >= next_ping_at:
+                device.write(PING_COMMAND)
+                device.flush()
+                next_ping_at = time.monotonic() + 1.0
+        if not ready:
+            raise RuntimeError("board did not acknowledge PID test protocol")
+        device.write(ENCODER_COMMAND)
+        device.flush()
+        print(
+            f"Encoder test on {port}: motor output is disabled. "
+            f"Turn both wheels by hand for {args.duration:g}s."
+        )
+        deadline = time.monotonic() + args.duration
+        while time.monotonic() < deadline:
+            data = device.readline()
+            if not data:
+                continue
+            text = data.decode("utf-8", errors="replace").strip()
+            if text.startswith("@PIDACK,"):
+                print(text)
+                continue
+            if not text.startswith("@ENC,1,"):
+                continue
+            parts = text.split(",")
+            if len(parts) != 11:
+                continue
+            try:
+                row = [int(value) for value in parts[2:]]
+            except ValueError:
+                continue
+            rows.append(row)
+            print(
+                f"M1 count={row[1]:7d} A={row[2]:7d} B={row[3]:7d} "
+                f"state={row[4]:02b} | M2 count={row[5]:7d} "
+                f"A={row[6]:7d} B={row[7]:7d} state={row[8]:02b}"
+            )
+    except SerialException as exc:
+        raise RuntimeError(f"serial encoder test failed: {exc}") from exc
+    finally:
+        if device is not None and device.is_open:
+            try:
+                device.write(STOP_COMMAND)
+                device.flush()
+            except SerialException:
+                pass
+            device.close()
+    if len(rows) < 2:
+        raise RuntimeError("no valid encoder diagnostic frames received")
+    first, last = rows[0], rows[-1]
+    result = {
+        "status": "ok",
+        "mode": "encoder_test",
+        "motor1": {
+            "count_delta": last[1] - first[1],
+            "a_edge_delta": last[2] - first[2],
+            "b_edge_delta": last[3] - first[3],
+        },
+        "motor2": {
+            "count_delta": last[5] - first[5],
+            "a_edge_delta": last[6] - first[6],
+            "b_edge_delta": last[7] - first[7],
+        },
+    }
+    print("RESULT_JSON=" + json.dumps(result, ensure_ascii=False))
     return 0
 
 
@@ -388,6 +695,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--self-test", action="store_true", help="test parser and analyzer"
     )
+    parser.add_argument(
+        "--encoder-test",
+        action="store_true",
+        help="disable motors and report raw A/B encoder edge counts",
+    )
+    parser.add_argument("--kp", type=float, help="runtime proportional gain")
+    parser.add_argument("--ki", type=float, default=1.0)
+    parser.add_argument("--kd", type=float, default=0.0)
+    parser.add_argument(
+        "--auto-tune",
+        action="store_true",
+        help="run a bounded PID candidate search and apply the best gains to RAM",
+    )
+    parser.add_argument("--max-runs", type=int, default=6)
     return parser
 
 
@@ -420,8 +741,32 @@ def main() -> int:
         parser.error("--target must be in [-100, 100]")
     if args.no_data_timeout <= 0:
         parser.error("--no-data-timeout must be positive")
+    if args.kp is not None and not (0 <= args.kp <= 30):
+        parser.error("--kp must be in [0, 30]")
+    if not (0 <= args.ki <= 3):
+        parser.error("--ki must be in [0, 3]")
+    if not (0 <= args.kd <= 2):
+        parser.error("--kd must be in [0, 2]")
+    if not (1 <= args.max_runs <= 6):
+        parser.error("--max-runs must be in [1, 6]")
     if args.self_test:
         return self_test()
+    if args.encoder_test:
+        try:
+            return run_encoder_test(args)
+        except (RuntimeError, OSError) as exc:
+            failure = {"status": "error", "message": str(exc)}
+            print(f"ERROR: {exc}", file=sys.stderr)
+            print("RESULT_JSON=" + json.dumps(failure, ensure_ascii=False))
+            return 2
+    if args.auto_tune:
+        try:
+            return run_auto_tune(args)
+        except (RuntimeError, OSError, SerialException) as exc:
+            failure = {"status": "error", "message": str(exc)}
+            print(f"ERROR: {exc}", file=sys.stderr)
+            print("RESULT_JSON=" + json.dumps(failure, ensure_ascii=False))
+            return 2
     if args.list:
         scan_ports()
         return 0

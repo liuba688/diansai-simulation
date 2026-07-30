@@ -8,10 +8,12 @@
  * the actual switch-to-pin order must still be confirmed on the real car.
  * Change only these four macros if the measured order is different.
  */
-#define CAR_MENU_KEY_UP_PIN       (B8)
-#define CAR_MENU_KEY_DOWN_PIN     (B9)
-#define CAR_MENU_KEY_OK_PIN       (B10)
-#define CAR_MENU_KEY_BACK_PIN     (B11)
+#define CAR_MENU_KEY_UP_PIN       (B13)
+#define CAR_MENU_KEY_DOWN_PIN     (B23)
+#define CAR_MENU_KEY_OK_PIN       (B26)
+#define CAR_MENU_KEY_BACK_PIN     (B27)
+
+#define CAR_MENU_KEY_DIAGNOSTIC_MODE (0U)
 
 #define CAR_MENU_VISIBLE_ROWS     (4U)
 #define CAR_MENU_ITEM_COUNT       (8U)
