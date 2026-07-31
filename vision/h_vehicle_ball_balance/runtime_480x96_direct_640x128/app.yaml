@@ -1,0 +1,12 @@
+id: h_pipe_ball_vision_direct_640x128
+name: H Pipe Ball Direct 640x128
+name[zh]: H题钢球直采640x128
+version: 0.4.2
+author: diansai
+desc: Direct 640x128 capture with 480x96 pipe-ball inference
+desc[zh]: 直接采集640x128并使用480x96水管钢球模型
+files:
+  - main.py
+  - README.md
+  - pipe_ball_480x96_v1.mud
+  - pipe_ball_480x96_v1.cvimodel

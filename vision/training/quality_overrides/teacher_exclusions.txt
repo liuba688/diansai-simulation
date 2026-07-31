@@ -1,0 +1,14 @@
+# scene/image
+# Codex visual QA: exclude frames with hand occlusion or an unlabeled partial
+# steel ball at the image boundary. Original captures remain untouched.
+scene_0004/sample_00053.jpg
+scene_0004/sample_00064.jpg
+scene_0004/sample_00074.jpg
+scene_0004/sample_00089.jpg
+scene_0004/sample_00104.jpg
+scene_0004/sample_00122.jpg
+scene_0004/sample_00125.jpg
+scene_0004/sample_00148.jpg
+scene_0004/sample_00233.jpg
+scene_0004/sample_00302.jpg
+scene_0004/sample_00388.jpg

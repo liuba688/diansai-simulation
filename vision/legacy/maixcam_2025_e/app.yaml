@@ -1,0 +1,12 @@
+id: maixcam_2025_e
+name: 2025 E Aim Vision
+version: 0.1.0
+author: diansai
+desc: A4 black-frame detection and UART target output for 2025 NUEDC E
+files:
+  - main.py
+  - app_aim.py
+  - config.py
+  - target_detector.py
+  - tracking_filter.py
+  - vision_protocol.py

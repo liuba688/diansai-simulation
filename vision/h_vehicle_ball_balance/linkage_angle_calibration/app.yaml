@@ -1,0 +1,12 @@
+id: h_linkage_angle_calibration
+name: H Linkage Angle Calibration
+name[zh]: H题连杆角度标定
+version: 0.2.0
+author: diansai
+desc: Safe touch-operated X42S linkage angle calibration
+desc[zh]: X42S曲柄连杆小角度触屏标定工具
+files:
+  - main.py
+  - linkage_geometry.py
+  - x42s_uart.py
+  - README.md

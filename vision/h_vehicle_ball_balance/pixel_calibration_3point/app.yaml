@@ -1,0 +1,17 @@
+id: h_pipe_ball_pixel_calibration
+name: H Pipe Ball 3-Point Calibration
+name[zh]: H题钢球三点标定
+version: 1.0.0
+author: diansai
+desc: Vision-only 0/+50/-50 mm pixel calibration; motor output disabled
+desc[zh]: 仅视觉标定0/+50/-50毫米，禁止电机输出
+files:
+  - main.py
+  - ball_control.py
+  - center_control.py
+  - task1_fast_control.py
+  - task1_timed_control.py
+  - x42s_uart.py
+  - README.md
+  - pipe_ball_480x96_v1.mud
+  - pipe_ball_480x96_v1.cvimodel
