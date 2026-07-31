@@ -7,7 +7,7 @@
 /*
  * CY-DXJ8 has eight independent digital outputs.
  * Vehicle-front view: OUT8 is leftmost and OUT1 is rightmost.
- * H55-8/PB10 and H55-9/PB11 remain reserved for START and E-STOP.
+ * OUT3 is connected to PB21 on the carrier board.
  */
 #define LINE_SENSOR_OUT1_PIN            (B25)  /* H55-1 */
 #define LINE_SENSOR_OUT2_PIN            (B18)  /* H55-2 */

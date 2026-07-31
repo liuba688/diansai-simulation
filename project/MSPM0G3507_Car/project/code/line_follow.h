@@ -9,7 +9,7 @@
 #define LINE_FOLLOW_MIN_CURVE_RPM            (92.0f)
 #define LINE_FOLLOW_SPEED_ERROR_GAIN         (0.18f)
 #define LINE_FOLLOW_SPEED_DERROR_GAIN        (0.10f)
-#define LINE_FOLLOW_SPEED_RECOVERY_RPM       (1.0f)
+#define LINE_FOLLOW_SPEED_RECOVERY_RPM       (2.0f)
 #define LINE_FOLLOW_CURVE_ENTER_STRENGTH     (90)
 #define LINE_FOLLOW_CURVE_EXIT_STRENGTH      (60)
 #define LINE_FOLLOW_CURVE_ENTER_TICKS        (8)
@@ -82,6 +82,20 @@ typedef enum
     TRACK_PHASE_COUNT
 } track_phase_enum;
 
+/*
+ * Runtime-overridable tunables.  Compile-time macros are defaults; speed-tier
+ * selection copies new values here before a run starts.
+ */
+typedef struct
+{
+    float straight_rpm;
+    float max_curve_rpm;
+    float min_curve_rpm;
+    float kp;
+    float kd;
+    float correction_max_rpm;
+} line_follow_params_struct;
+
 typedef struct
 {
     int16 previous_error;
@@ -108,9 +122,12 @@ typedef struct
     float base_rpm;
     float correction_rpm;
     float curve_direction;
+    line_follow_params_struct params;
 } line_follow_struct;
 
 void line_follow_init (line_follow_struct *follow);
+void line_follow_set_params (line_follow_struct *follow,
+                             const line_follow_params_struct *params);
 void line_follow_update (line_follow_struct *follow,
                          const line_sensor_data_struct *sensor,
                          float yaw_total_deg,

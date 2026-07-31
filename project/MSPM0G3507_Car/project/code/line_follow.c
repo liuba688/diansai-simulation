@@ -116,9 +116,25 @@ void line_follow_init (line_follow_struct *follow)
     follow->curve_yaw_progress_deg = 0.0f;
     follow->mode = LINE_FOLLOW_MODE_NORMAL;
     follow->track_phase = TRACK_PHASE_STRAIGHT_1;
-    follow->base_rpm = LINE_FOLLOW_STRAIGHT_RPM;
+    follow->params.straight_rpm = LINE_FOLLOW_STRAIGHT_RPM;
+    follow->params.max_curve_rpm = LINE_FOLLOW_MAX_CURVE_RPM;
+    follow->params.min_curve_rpm = LINE_FOLLOW_MIN_CURVE_RPM;
+    follow->params.kp = LINE_FOLLOW_KP;
+    follow->params.kd = LINE_FOLLOW_KD;
+    follow->params.correction_max_rpm = LINE_FOLLOW_CORRECTION_MAX_RPM;
+    follow->base_rpm = follow->params.straight_rpm;
     follow->correction_rpm = 0.0f;
     follow->curve_direction = 0.0f;
+}
+
+void line_follow_set_params (line_follow_struct *follow,
+                             const line_follow_params_struct *params)
+{
+    if((0 == follow) || (0 == params))
+    {
+        return;
+    }
+    follow->params = *params;
 }
 
 void line_follow_update (line_follow_struct *follow,
@@ -355,7 +371,7 @@ void line_follow_update (line_follow_struct *follow,
     curve_strength = line_follow_abs_i16(sensor->error)
                    + (int16)(LINE_FOLLOW_SPEED_DERROR_GAIN
                              * line_follow_abs_i16(error_delta));
-    requested_base_rpm = LINE_FOLLOW_STRAIGHT_RPM
+    requested_base_rpm = follow->params.straight_rpm
                        - LINE_FOLLOW_SPEED_ERROR_GAIN * curve_strength;
 
     /*
@@ -387,8 +403,8 @@ void line_follow_update (line_follow_struct *follow,
                && dist_to_curve > 0.0f)
             {
                 float approach_max =
-                    LINE_FOLLOW_MAX_CURVE_RPM
-                    + (LINE_FOLLOW_STRAIGHT_RPM - LINE_FOLLOW_MAX_CURVE_RPM)
+                    follow->params.max_curve_rpm
+                    + (follow->params.straight_rpm - follow->params.max_curve_rpm)
                       * (dist_to_curve / TRACK_CURVE_APPROACH_ZONE_CM);
                 if(requested_base_rpm > approach_max)
                 {
@@ -398,9 +414,9 @@ void line_follow_update (line_follow_struct *follow,
             else if(dist_to_curve <= 0.0f)
             {
                 /* Already past the boundary — cap to curve speed. */
-                if(requested_base_rpm > LINE_FOLLOW_MAX_CURVE_RPM)
+                if(requested_base_rpm > follow->params.max_curve_rpm)
                 {
-                    requested_base_rpm = LINE_FOLLOW_MAX_CURVE_RPM;
+                    requested_base_rpm = follow->params.max_curve_rpm;
                 }
             }
         }
@@ -507,20 +523,20 @@ void line_follow_update (line_follow_struct *follow,
     /* When fusion is disabled, preserve the legacy error-based cap as a safety net. */
     if(!LINE_FOLLOW_ARC_FUSION_ENABLE
        && (curve_strength >= LINE_FOLLOW_CURVE_ENTER_STRENGTH)
-       && (requested_base_rpm > LINE_FOLLOW_MAX_CURVE_RPM))
+       && (requested_base_rpm > follow->params.max_curve_rpm))
     {
-        requested_base_rpm = LINE_FOLLOW_MAX_CURVE_RPM;
+        requested_base_rpm = follow->params.max_curve_rpm;
     }
 
     /* Global speed floor and curve cap. */
     if(follow->curve_active
-       && (requested_base_rpm > LINE_FOLLOW_MAX_CURVE_RPM))
+       && (requested_base_rpm > follow->params.max_curve_rpm))
     {
-        requested_base_rpm = LINE_FOLLOW_MAX_CURVE_RPM;
+        requested_base_rpm = follow->params.max_curve_rpm;
     }
-    if(requested_base_rpm < LINE_FOLLOW_MIN_CURVE_RPM)
+    if(requested_base_rpm < follow->params.min_curve_rpm)
     {
-        requested_base_rpm = LINE_FOLLOW_MIN_CURVE_RPM;
+        requested_base_rpm = follow->params.min_curve_rpm;
     }
 
     /* Brake immediately for a curve, accelerate gently after recentering. */
@@ -538,10 +554,10 @@ void line_follow_update (line_follow_struct *follow,
     }
 
     /* PD correction. */
-    correction = LINE_FOLLOW_KP * sensor->error
-               + LINE_FOLLOW_KD * error_delta;
+    correction = follow->params.kp * sensor->error
+               + follow->params.kd * error_delta;
     correction = line_follow_limit(correction,
-                                    LINE_FOLLOW_CORRECTION_MAX_RPM);
+                                    follow->params.correction_max_rpm);
 
     /* ================================================================
      * CURVE FEEDFORWARD + FEEDBACK (when arc fusion is active)
