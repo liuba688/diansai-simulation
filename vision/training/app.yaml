@@ -1,0 +1,8 @@
+id: maixcam_steel_ball_capture
+name: Steel Ball Dataset Capture
+version: 0.1.0
+author: diansai
+desc: Capture empty-reference and sample images for steel-ball training
+files:
+  - main.py
+  - README.md

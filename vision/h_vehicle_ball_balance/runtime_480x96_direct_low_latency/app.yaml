@@ -1,0 +1,14 @@
+id: h_task4_center_hold_bench
+name: H Task 4 Center Hold Bench
+name[zh]: H题第四问零点抗扰台架版
+version: 4.0.5
+author: diansai
+desc: Direct MaixCAM-X42S center hold and disturbance recovery
+desc[zh]: MaixCAM直连X42S的零刻度抗扰保持
+files:
+  - main.py
+  - task4_center_hold_control.py
+  - x42s_uart.py
+  - README.md
+  - pipe_ball_480x96_v1.mud
+  - pipe_ball_480x96_v1.cvimodel

@@ -1,0 +1,12 @@
+id: h_pipe_ball_vision
+name: H Pipe Ball Vision
+name[zh]: H题水管钢球视觉
+version: 0.4.0
+author: diansai
+desc: Pipe-specialized YOLOv8 steel-ball detection for the 2026 H task
+desc[zh]: 2026 H题水管特化钢球识别与连续帧跟踪
+files:
+  - main.py
+  - README.md
+  - pipe_ball_320_v2.mud
+  - pipe_ball_320_v2.cvimodel

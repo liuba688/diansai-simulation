@@ -1,0 +1,12 @@
+id: maixcam_steel_ball
+name: Steel Ball Detector
+name[zh]: 钢珠识别
+version: 0.3.0
+author: diansai
+desc: YOLOv8 steel-ball detection with confidence filtering and temporal confirmation
+desc[zh]: 使用 YOLOv8、置信度过滤和连续帧确认实时识别钢珠
+files:
+  - main.py
+  - README.md
+  - steel_ball_320_v2.mud
+  - steel_ball_320_v2.cvimodel

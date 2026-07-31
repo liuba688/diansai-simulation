@@ -1,0 +1,10 @@
+id: h_ball_pipe_capture
+name: H Ball Pipe Capture
+name[zh]: H题水管钢球采集
+version: 0.1.0
+author: diansai
+desc: Capture full-width pipe and steel-ball images for the 2026 H task
+desc[zh]: 为2026 H题采集横向全幅水管钢球原图
+files:
+  - main.py
+  - README.md

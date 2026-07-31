@@ -1,0 +1,17 @@
+id: h_pipe_ball_vision_low_latency
+name: H Pipe Ball Low Latency
+name[zh]: H题钢球低延迟版
+version: 3.1.43
+author: diansai
+desc: Earlier negative PD handoff at -40 mm/s
+desc[zh]: 负端速度回升到-40毫米每秒时提前切入PD
+files:
+  - main.py
+  - ball_control.py
+  - center_control.py
+  - task1_fast_control.py
+  - task1_timed_control.py
+  - x42s_uart.py
+  - README.md
+  - pipe_ball_480x96_v1.mud
+  - pipe_ball_480x96_v1.cvimodel

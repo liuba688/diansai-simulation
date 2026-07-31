@@ -1,0 +1,17 @@
+id: h_pipe_ball_vision_low_latency
+name: H Pipe Ball Low Latency
+name[zh]: H题钢球低延迟版
+version: 3.1.42
+author: diansai
+desc: Require positive scoring band before reversal; level after complete
+desc[zh]: 正端进入合格区后才折返，完成后立即水平
+files:
+  - main.py
+  - ball_control.py
+  - center_control.py
+  - task1_fast_control.py
+  - task1_timed_control.py
+  - x42s_uart.py
+  - README.md
+  - pipe_ball_480x96_v1.mud
+  - pipe_ball_480x96_v1.cvimodel
