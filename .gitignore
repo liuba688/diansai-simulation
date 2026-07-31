@@ -1,31 +1,79 @@
-# Python
+# This repository contains firmware, vision software, hardware files, reports,
+# test fixtures and measured run logs. Keep those; ignore only reproducible
+# build output, machine-local settings, caches and scratch data.
+
+# Operating-system and editor metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python caches, environments and packaging output
 __pycache__/
 *.py[cod]
-maixcam_ball_car/dist/
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+
+# Local PID-tool sessions. Curated/official run logs under output/ stay tracked.
 tools/pid_test/.venv/
 tools/pid_test/logs/
-tools/pid_test/*.csv
-tools/pid_test/*.log
-tools/pid_test/*.json
-tools/pid_test/.pytest_cache/
-tools/pid_test/.mypy_cache/
 tools/pid_test/tmp/
+tools/pid_test/*.csv
+tools/pid_test/*.json
+tools/pid_test/*.log
 
-# CCS / Make build products
-project/MSPM0G3507_Car/project/ccs/build/
+# Keil MDK generated output and per-user state
+**/Objects/*
+**/Listings/*
+*.uvguix.*
+*.uvoptx
+*.uvgui.*
+*.uvgui
+*.scvd
+*.bak
+*.lst
+*.crf
+*.d
+*.o
+*.obj
+*.axf
+*.elf
+*.lnp
+*.dep
+*.map
+*.build_log.htm
+*_build.log
+**/project/mdk/*.log
+
+# Keep the current competition firmware image as a release artifact.
+!project/MSPM0G3507_Car/project/mdk/Objects/
+project/MSPM0G3507_Car/project/mdk/Objects/*
+!project/MSPM0G3507_Car/project/mdk/Objects/SeekFree_MSPM0G3507_Device_Library.hex
+
+# CCS / Make generated output
 **/Debug/
 **/Release/
+project/MSPM0G3507_Car/project/ccs/build/
+*.out
 
-# Keil build products. Some legacy artifacts are already tracked upstream;
-# this prevents newly generated files from being added.
-**/Objects/
-**/Listings/
-
-# Local diagnostic workspaces created while validating the CCS project
-tmp/build/
-tmp/ccs_help_workspace/
-tmp/ccs_help_workspace_build/
-tmp/ccs_workspace_ball_car/
-tmp/ccs_workspace_existing_test/
-tmp/ccs_workspace_existing_test2/
-tmp/pdfs/ti_final_board_20260727/
+# Generic local logs and temporary files (measured CSV logs are intentionally
+# not ignored globally).
+*.tmp
+*.temp
+*.log
+tmp/*
+!tmp/.gitkeep
