@@ -87,6 +87,10 @@ static void accept_response(uint8_t function, uint8_t status, uint32_t tick)
             target_offset = 0;
             state = ZDT_EMM_READY;
         }
+        else if(ZDT_EMM_RETURNING_HOME == state && 0xFDU == function)
+        {
+            state = ZDT_EMM_READY;
+        }
         return;
     }
     error_count++;
@@ -108,7 +112,9 @@ void zdt_emm_init(void)
 
 void zdt_emm_begin(uint32_t tick)
 {
-    if(ZDT_EMM_ENABLING == state || ZDT_EMM_ANCHORING == state) return;
+    /* The power-on anchor is persistent; task selection must not redefine it. */
+    if(ZDT_EMM_READY == state || ZDT_EMM_RETURNING_HOME == state
+       || ZDT_EMM_ENABLING == state || ZDT_EMM_ANCHORING == state) return;
     pending_function = 0U; target_offset = 0; consecutive_errors = 0U;
     write_enable(1U); send_pending(0xF3U, tick); state = ZDT_EMM_ENABLING;
 }
@@ -156,6 +162,23 @@ uint8_t zdt_emm_request_target(int16_t requested, uint32_t tick)
     write_position(step, 0U);
     target_offset += step;
     send_pending(0xFDU, tick);
+    return 1U;
+}
+
+uint8_t zdt_emm_return_home(uint32_t tick)
+{
+    int16_t correction;
+    if(ZDT_EMM_READY != state && ZDT_EMM_RETURNING_HOME != state) return 0U;
+    if(ZDT_EMM_RETURNING_HOME == state) return 1U;
+    if(0 == target_offset) return 1U;
+
+    /* A new standard-position command interrupts the previous one smoothly. */
+    correction = (int16_t)-target_offset;
+    pending_function = 0U;
+    write_position(correction, 0U);
+    target_offset = 0;
+    send_pending(0xFDU, tick);
+    state = ZDT_EMM_RETURNING_HOME;
     return 1U;
 }
 

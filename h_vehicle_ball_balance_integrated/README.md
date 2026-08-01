@@ -11,7 +11,7 @@
 
 ## 交付入口
 
-- `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.2.hex`：MSPM0 最新烧录文件；Task 3 完成优先、无 5 s 故障退出。
+- `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.3.hex`：MSPM0 最新烧录文件；Task 3 完成优先，并使用上电零点自动回水平。
 - `dist/maix-h_vehicle_ball_balance-v1.0.0.zip`：MaixVision 安装包。
 - `docs/01_architecture_and_tasks.md`：结构、任务绑定与算法说明。
 - `docs/02_wiring_and_safety.md`：接线和首次上电安全流程。

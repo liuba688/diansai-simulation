@@ -1,0 +1,1304 @@
+******************************************************************************
+            TI ARM Clang Linker PC v5.1.1                      
+******************************************************************************
+>> Linked Sat Aug  1 11:08:15 2026
+
+OUTPUT FILE NAME:   <build/mspm0g3507_ball_car.out>
+ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 00009ffd
+
+
+MEMORY CONFIGURATION
+
+         name            origin    length      used     unused   attr    fill
+----------------------  --------  ---------  --------  --------  ----  --------
+  FLASH                 00000000   00020000  0000b328  00014cd8  R  X
+  SRAM                  20200000   00008000  00004d79  00003287  RW X
+  BCR_CONFIG            41c00000   000000ff  00000000  000000ff  R   
+  BSL_CONFIG            41c00100   00000080  00000000  00000080  R   
+
+
+SEGMENT ALLOCATION MAP
+
+run origin  load origin   length   init length attrs members
+----------  ----------- ---------- ----------- ----- -------
+00000000    00000000    0000b328   0000b328    r-x
+  00000000    00000000    000000c0   000000c0    r-- .intvecs
+  000000c0    000000c0    0000a610   0000a610    r-x .text
+  0000a6d0    0000a6d0    00000bf0   00000bf0    r-- .rodata
+  0000b2c0    0000b2c0    00000068   00000068    r-- .cinit
+20200000    20200000    00003d7b   00000000    rw-
+  20200000    20200000    00003b92   00000000    rw- .bss
+  20203b94    20203b94    000001e7   00000000    rw- .data
+20207000    20207000    00001000   00000000    rw-
+  20207000    20207000    00001000   00000000    rw- .stack
+
+
+SECTION ALLOCATION MAP
+
+ output                                  attributes/
+section   page    origin      length       input sections
+--------  ----  ----------  ----------   ----------------
+.intvecs   0    00000000    000000c0     
+                  00000000    000000c0     startup_mspm0g350x_ticlang.o (.intvecs)
+
+.text      0    000000c0    0000a610     
+                  000000c0    00001230     car_app.o (.text.car_app_run)
+                  000012f0    00000a7c     libc.a : _printfi.c.obj (.text:__TI_printfi)
+                  00001d6c    0000083c     ball_balance.o (.text.ball_balance_update)
+                  000025a8    00000560     line_follow.o (.text.line_follow_update)
+                  00002b08    000004c0     zf_common_fifo.o (.text.fifo_write_buffer)
+                  00002fc8    00000444     mpu6050_yaw.o (.text.mpu6050_yaw_update)
+                  0000340c    000003ac     car_app.o (.text.car_oled_update_status)
+                  000037b8    0000036c     car_menu.o (.text.car_menu_update)
+                  00003b24    0000034c     mpu6050_yaw.o (.text.mpu6050_yaw_update_fast)
+                  00003e70    000002dc     libc.a : divdf3_fast.c.obj (.text.__divdf3_fast)
+                  0000414c    0000029c     zf_common_debug.o (.text.debug_output)
+                  000043e8    00000294     car_app.o (.text.car_app_init)
+                  0000467c    00000294     mpu6050_yaw.o (.text.mpu6050_yaw_calibrate)
+                  00004910    0000027c     mpu6050_yaw.o (.text.mpu6050_yaw_init)
+                  00004b8c    0000023a     h_mission.o (.text.h_mission_update)
+                  00004dc6    00000002     startup_mspm0g350x_ticlang.o (.text.Default_Handler)
+                  00004dc8    0000020c     libc.a : _printfi.c.obj (.text._pconv_a)
+                  00004fd4    000001e0            : _printfi.c.obj (.text._pconv_g)
+                  000051b4    000001d8            : muldf3_fast.c.obj (.text.__muldf3_fast)
+                  0000538c    000001bc     zf_driver_soft_iic.o (.text.soft_iic_read_data)
+                  00005548    000001a4     car_menu.o (.text.car_menu_render)
+                  000056ec    000001a4     car_app.o (.text.car_oled_fill)
+                  00005890    000001a0     zf_driver_soft_iic.o (.text.soft_iic_send_data)
+                  00005a30    00000194     zdt_emm_v5.o (.text.zdt_emm_update)
+                  00005bc4    00000192     libclang_rt.builtins.a : adddf3.S.obj (.text)
+                  00005d56    00000002                            : aeabi_div0.c.obj (.text.__aeabi_idiv0)
+                  00005d58    00000190     angle_pid.o (.text.angle_pid_update)
+                  00005ee8    00000190     ball_balance.o (.text.settle_angle)
+                  00006078    00000160     speed_pid.o (.text.speed_pid_set_target)
+                  000061d8    0000015c     speed_pid.o (.text.speed_pid_update)
+                  00006334    00000150     zf_driver_pwm.o (.text.pwm_init)
+                  00006484    0000014c     zf_driver_soft_iic.o (.text.soft_iic_read_8bit_registers)
+                  000065d0    00000138     libc.a : _printfi.c.obj (.text.fcvt)
+                  00006708    00000130     car_app.o (.text.car_oled_show_string)
+                  00006838    00000130     car_app.o (.text.car_stop_and_open_menu)
+                  00006968    0000011c     vision_protocol.o (.text.vision_protocol_feed)
+                  00006a84    00000118     vision_uart.o (.text.vision_uart_process)
+                  00006b9c    00000108     car_app.o (.text.car_finish_and_hold_status)
+                  00006ca4    00000104     zf_driver_uart.o (.text.uart_init)
+                  00006da8    00000100     line_sensor.o (.text.line_sensor_read)
+                  00006ea8    000000fc     libc.a : _printfi.c.obj (.text._pconv_e)
+                  00006fa4    000000fc     pid_test_serial.o (.text.pid_test_serial_send_sample)
+                  000070a0    000000f0     zdt_emm_v5.o (.text.zdt_emm_request_target)
+                  00007190    000000ec     zf_driver_gpio.o (.text.gpio_init)
+                  0000727c    000000ec     zf_driver_soft_iic.o (.text.soft_iic_wait_ack)
+                  00007368    000000e8     zf_driver_uart.o (.text.uart_write_buffer)
+                  00007450    000000e4     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_init)
+                  00007534    000000e4     zf_driver_uart.o (.text.uart_set_interrupt_config)
+                  00007618    000000e0     car_app.o (.text.car_run_log_dump)
+                  000076f8    000000dc     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_configSYSPLL)
+                  000077d4    000000dc     libc.a : s_scalbn.c.obj (.text.scalbn)
+                  000078b0    000000dc     zf_driver_delay.o (.text.system_delay_ms)
+                  0000798c    000000d8     zf_common_clock.o (.text.clock_init)
+                  00007a64    000000d8     libclang_rt.builtins.a : addsf3.S.obj (.text)
+                  00007b3c    000000d4     car_menu.o (.text.car_menu_init)
+                  00007c10    000000d4     zf_driver_soft_iic.o (.text.soft_iic_write_8bit_array)
+                  00007ce4    000000d4     vision_protocol.o (.text.vision_protocol_build_command)
+                  00007db8    000000d0     mpu6050_yaw.o (.text.mpu6050_yaw_set_angle)
+                  00007e88    000000d0     vision_uart.o (.text.vision_uart_get_snapshot)
+                  00007f58    000000c8     angle_pid.o (.text.angle_pid_set_target)
+                  00008020    000000c8     zf_driver_soft_iic.o (.text.soft_iic_start)
+                  000080e8    000000c4     zf_driver_soft_iic.o (.text.soft_iic_stop)
+                  000081ac    000000c4     zf_driver_timer.o (.text.timer_init)
+                  00008270    000000c0     vision_uart.o (.text.vision_uart_init)
+                  00008330    000000b8     zf_driver_soft_iic.o (.text.soft_iic_send_ack)
+                  000083e8    000000ac     odometer.o (.text.odometer_update)
+                  00008494    000000a8     zf_driver_exti.o (.text.exti_init)
+                  0000853c    000000a8     zf_driver_pwm.o (.text.pwm_set_duty)
+                  000085e4    000000a4     zdt_emm_v5.o (.text.zdt_emm_return_home)
+                  00008688    000000a2     libclang_rt.builtins.a : udivmoddi4.S.obj (.text)
+                  0000872a    00000002                            : aeabi_div0.c.obj (.text.__aeabi_ldiv0)
+                  0000872c    000000a0     h_mission.o (.text.h_mission_prepare)
+                  000087cc    0000009a     libc.a : memcpy16.S.obj (.text:memcpy)
+                  00008866    00000002     zf_driver_exti.o (.text.exti_callbakc_defalut)
+                  00008868    00000098     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_SYSPLL_init)
+                  00008900    00000098     tb6612.o (.text.tb6612_init)
+                  00008998    00000094     wheel_encoder.o (.text.wheel_encoder_init)
+                  00008a2c    00000090     zdt_emm_v5.o (.text.zdt_emm_init)
+                  00008abc    0000008c     zf_common_debug.o (.text.debug_assert_handler)
+                  00008b48    0000008c     libclang_rt.builtins.a : comparesf2.S.obj (.text)
+                  00008bd4    0000008c                            : mulsf3.S.obj (.text)
+                  00008c60    00000088     zf_driver_gpio.o (.text.afio_init)
+                  00008ce8    00000084     zf_driver_gpio.o (.text.gpio_set_a0_a1_output)
+                  00008d6c    00000082     libclang_rt.builtins.a : divsf3.S.obj (.text)
+                  00008dee    00000002     zf_common_interrupt.o (.text.interrupt_init)
+                  00008df0    0000007c     libc.a : copy_decompress_lzss.c.obj (.text:decompress:lzss)
+                  00008e6c    00000074     libclang_rt.builtins.a : comparedf2.c.obj (.text.__gedf2)
+                  00008ee0    00000074     h_mission.o (.text.h_mission_start)
+                  00008f54    0000006c     tb6612.o (.text.tb6612_apply)
+                  00008fc0    00000068     libclang_rt.builtins.a : comparedf2.c.obj (.text.__ledf2)
+                  00009028    00000068     line_sensor.o (.text.line_sensor_init)
+                  00009090    00000068     zdt_emm_v5.o (.text.zdt_emm_begin)
+                  000090f8    00000066     libc.a : _printfi.c.obj (.text._mcpy)
+                  0000915e    00000066     vision_protocol.o (.text.vision_protocol_decode_ball)
+                  000091c4    00000064     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_setHFCLKSourceHFXTParams)
+                  00009228    00000062     libc.a : memset16.S.obj (.text:memset)
+                  0000928a    00000002     zf_driver_pit.o (.text.pit_callbakc_defalut)
+                  0000928c    00000060     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_setLFCLKSourceLFXT)
+                  000092ec    00000060     zf_driver_soft_iic.o (.text.soft_iic_init)
+                  0000934c    00000060     vision_protocol.o (.text.vision_protocol_decode_event)
+                  000093ac    00000060     wheel_encoder.o (.text.wheel_encoder_edge_callback)
+                  0000940c    0000005c     libc.a : s_frexp.c.obj (.text.frexp)
+                  00009468    0000005a     libclang_rt.builtins.a : aeabi_dcmp.S.obj (.text)
+                  000094c2    00000002     zf_driver_delay.o (.text.system_delay_init)
+                  000094c4    0000005a     libclang_rt.builtins.a : aeabi_fcmp.S.obj (.text)
+                  0000951e    00000002     zf_driver_uart.o (.text.uart_callbakc_defalut)
+                  00009520    00000058     isr.o (.text.GROUP1_IRQHandler)
+                  00009578    00000058     libc.a : _ltoa.c.obj (.text.__TI_ltoa)
+                  000095d0    00000058            : _printfi.c.obj (.text._pconv_f)
+                  00009628    00000058     vision_uart.o (.text.rx_callback)
+                  00009680    00000058     zdt_emm_v5.o (.text.rx_callback)
+                  000096d8    00000056     libclang_rt.builtins.a : aeabi_idivmod.S.obj (.text)
+                  0000972e    00000002     --HOLE-- [fill = 0]
+                  00009730    00000054     zf_driver_uart.o (.text.uart_write_string)
+                  00009784    00000052     libc.a : _printfi.c.obj (.text._ecpy)
+                  000097d6    00000002     --HOLE-- [fill = 0]
+                  000097d8    00000050     line_follow.o (.text.line_follow_init)
+                  00009828    0000004e     h_mission.o (.text.h_mission_stop)
+                  00009876    00000002     --HOLE-- [fill = 0]
+                  00009878    0000004a     libclang_rt.builtins.a : fixdfsi.S.obj (.text)
+                  000098c2    00000002     --HOLE-- [fill = 0]
+                  000098c4    00000048     driverlib.a : dl_uart.o (.text.DL_UART_init)
+                  0000990c    00000048     libc.a : snprintf.c.obj (.text.snprintf)
+                  00009954    00000044     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK)
+                  00009998    00000044     libc.a : atoi.c.obj (.text.atoi)
+                  000099dc    00000044     zf_driver_soft_iic.o (.text.soft_iic_write_8bit_register)
+                  00009a20    00000044     vision_uart.o (.text.vision_uart_send_command)
+                  00009a64    00000040     isr.o (.text.UART0_IRQHandler)
+                  00009aa4    00000040     tb6612.o (.text.tb6612_stop_all)
+                  00009ae4    00000040     libclang_rt.builtins.a : aeabi_uidivmod.S.obj (.text)
+                  00009b24    00000040                            : extendsfdf2.S.obj (.text)
+                  00009b64    0000003c     pid_test_serial.o (.text.pid_test_serial_send_encoder)
+                  00009ba0    0000003c     zf_driver_uart.o (.text.uart_query_byte)
+                  00009bdc    0000003c     libc.a : autoinit.c.obj (.text:__TI_auto_init_nobinit_nopinit)
+                  00009c18    0000003c     libclang_rt.builtins.a : floatsisf.S.obj (.text)
+                  00009c54    0000003a                            : muldsi3.S.obj (.text)
+                  00009c8e    00000002     --HOLE-- [fill = 0]
+                  00009c90    00000038     ti_msp_dl_config.o (.text.SYSCFG_DL_initPower)
+                  00009cc8    00000038     libc.a : sprintf.c.obj (.text.sprintf)
+                  00009d00    00000038     zdt_emm_v5.o (.text.zdt_emm_emergency_stop)
+                  00009d38    00000038     libclang_rt.builtins.a : fixsfsi.S.obj (.text)
+                  00009d70    00000034     isr.o (.text.UART1_IRQHandler)
+                  00009da4    00000034     isr.o (.text.UART2_IRQHandler)
+                  00009dd8    00000034     isr.o (.text.UART3_IRQHandler)
+                  00009e0c    00000032     libc.a : snprintf.c.obj (.text._outs)
+                  00009e3e    00000002     --HOLE-- [fill = 0]
+                  00009e40    00000032     libclang_rt.builtins.a : fixunssfsi.S.obj (.text)
+                  00009e72    00000002     --HOLE-- [fill = 0]
+                  00009e74    00000030                            : comparedf2.c.obj (.text.__unorddf2)
+                  00009ea4    00000030     libc.a : _printfi.c.obj (.text._fcpy)
+                  00009ed4    00000030     zf_driver_gpio.o (.text.gpio_toggle_level)
+                  00009f04    0000002c     libclang_rt.builtins.a : floatsidf.S.obj (.text)
+                  00009f30    0000002a     ball_balance.o (.text.ball_balance_start)
+                  00009f5a    00000002     --HOLE-- [fill = 0]
+                  00009f5c    00000028     car_menu.o (.text.car_menu_open)
+                  00009f84    00000028     zf_driver_gpio.o (.text.gpio_set_level)
+                  00009fac    00000028     tb6612.o (.text.tb6612_set_motor)
+                  00009fd4    00000028     wheel_encoder.o (.text.wheel_encoder_get_state)
+                  00009ffc    00000028     libc.a : boot_cortex_m.c.obj (.text:_c_int00_noargs)
+                  0000a024    00000028     libclang_rt.builtins.a : floatunsisf.S.obj (.text)
+                  0000a04c    00000024     ti_msp_dl_config.o (.text.SYSCFG_DL_GPIO_init)
+                  0000a070    00000024     pid_test_serial.o (.text.pid_test_serial_send_ack)
+                  0000a094    00000024     libclang_rt.builtins.a : floatunsidf.S.obj (.text)
+                  0000a0b8    00000024                            : muldi3.S.obj (.text)
+                  0000a0dc    00000022     driverlib.a : dl_vref.o (.text.DL_VREF_configReference)
+                  0000a0fe    00000022     libc.a : memccpy.c.obj (.text.memccpy)
+                  0000a120    00000022     zf_common_debug.o (.text.strlen)
+                  0000a142    00000002     --HOLE-- [fill = 0]
+                  0000a144    00000020     car_menu.o (.text.car_menu_task_name)
+                  0000a164    00000020     zf_common_debug.o (.text.debug_interrupr_handler)
+                  0000a184    00000020     zf_driver_gpio.o (.text.gpio_get_level)
+                  0000a1a4    00000020     zf_common_interrupt.o (.text.interrupt_disable)
+                  0000a1c4    00000020     zf_driver_uart.o (.text.uart_set_callback)
+                  0000a1e4    00000020     zdt_emm_v5.o (.text.zdt_emm_set_step_limits)
+                  0000a204    0000001e     libclang_rt.builtins.a : ashldi3.S.obj (.text)
+                  0000a222    00000002     --HOLE-- [fill = 0]
+                  0000a224    0000001c     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_configFCC)
+                  0000a240    0000001c     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSTICK_init)
+                  0000a25c    0000001c     car_menu.o (.text.car_menu_close)
+                  0000a278    0000001c     zf_driver_timer.o (.text.timer_clock_enable)
+                  0000a294    0000001c     zf_driver_timer.o (.text.timer_funciton_check)
+                  0000a2b0    0000001c     zf_driver_timer.o (.text.timer_start)
+                  0000a2cc    0000001a     speed_pid.o (.text.speed_pid_set_start_duty)
+                  0000a2e6    00000002     --HOLE-- [fill = 0]
+                  0000a2e8    0000001a     libclang_rt.builtins.a : aeabi_memset.S.obj (.text)
+                  0000a302    00000018     ti_msp_dl_config.o (.text.SYSCFG_DL_init)
+                  0000a31a    00000002     --HOLE-- [fill = 0]
+                  0000a31c    00000018     isr.o (.text.TIMA0_IRQHandler)
+                  0000a334    00000018     isr.o (.text.TIMA1_IRQHandler)
+                  0000a34c    00000018     isr.o (.text.TIMG0_IRQHandler)
+                  0000a364    00000018     isr.o (.text.TIMG12_IRQHandler)
+                  0000a37c    00000018     isr.o (.text.TIMG6_IRQHandler)
+                  0000a394    00000018     isr.o (.text.TIMG7_IRQHandler)
+                  0000a3ac    00000018     isr.o (.text.TIMG8_IRQHandler)
+                  0000a3c4    00000018     libc.a : snprintf.c.obj (.text._outc)
+                  0000a3dc    00000018            : sprintf.c.obj (.text._outs)
+                  0000a3f4    00000018     h_mission.o (.text.h_mission_init)
+                  0000a40c    00000018     zf_common_interrupt.o (.text.interrupt_enable)
+                  0000a424    00000018     zf_common_interrupt.o (.text.interrupt_global_disable)
+                  0000a43c    00000018     main.o (.text.main)
+                  0000a454    00000018     mpu6050_yaw.o (.text.mpu6050_yaw_is_ready)
+                  0000a46c    00000018     speed_pid.o (.text.speed_pid_init)
+                  0000a484    00000016     h_mission.o (.text.h_mission_car_allowed)
+                  0000a49a    00000016     line_follow.o (.text.line_follow_set_params)
+                  0000a4b0    00000014     ti_msp_dl_config.o (.text.SYSCFG_DL_VREF_init)
+                  0000a4c4    00000014     car_menu.o (.text.car_menu_get_speed_tier_params)
+                  0000a4d8    00000014     libclang_rt.builtins.a : aeabi_uldivmod.S.obj (.text)
+                  0000a4ec    00000012     driverlib.a : dl_uart.o (.text.DL_UART_setClockConfig)
+                  0000a4fe    00000012     ball_balance.o (.text.ball_balance_has_fault)
+                  0000a510    00000012     ball_balance.o (.text.ball_balance_is_complete)
+                  0000a522    00000012     h_mission.o (.text.h_mission_finish_chassis)
+                  0000a534    00000012     libc.a : _printfi.c.obj (.text.strchr)
+                  0000a546    00000012            : copy_decompress_none.c.obj (.text:decompress:none)
+                  0000a558    00000010            : wcslen.c.obj (.text.wcslen)
+                  0000a568    00000010     wheel_encoder.o (.text.wheel_encoder_get_edge_count)
+                  0000a578    00000010     zdt_emm_v5.o (.text.zdt_emm_has_fault)
+                  0000a588    00000010     zdt_emm_v5.o (.text.zdt_emm_is_ready)
+                  0000a598    00000010     libc.a : copy_zero_init.c.obj (.text:decompress:ZI)
+                  0000a5a8    0000000e     angle_pid.o (.text.angle_pid_init)
+                  0000a5b6    0000000e     ball_balance.o (.text.ball_balance_init)
+                  0000a5c4    0000000e     ball_balance.o (.text.ball_balance_stop)
+                  0000a5d2    0000000e     odometer.o (.text.odometer_init)
+                  0000a5e0    0000000e     odometer.o (.text.odometer_reset)
+                  0000a5ee    0000000e     libc.a : _printfi.c.obj (.text.strlen)
+                  0000a5fc    0000000e     vision_protocol.o (.text.vision_protocol_parser_init)
+                  0000a60a    0000000c     angle_pid.o (.text.angle_pid_reset)
+                  0000a616    00000002     --HOLE-- [fill = 0]
+                  0000a618    0000000c     car_menu.o (.text.car_menu_get_speed_tier)
+                  0000a624    0000000c     car_menu.o (.text.car_menu_is_open)
+                  0000a630    0000000c     mpu6050_yaw.o (.text.mpu6050_yaw_get_angle)
+                  0000a63c    0000000c     mpu6050_yaw.o (.text.mpu6050_yaw_get_rate_dps)
+                  0000a648    0000000c     mpu6050_yaw.o (.text.mpu6050_yaw_get_total_angle)
+                  0000a654    0000000c     wheel_encoder.o (.text.wheel_encoder_get_count)
+                  0000a660    0000000a     driverlib.a : dl_common.o (.text.DL_Common_delayCycles)
+                  0000a66a    0000000a     libc.a : _printfi.c.obj (.text.OUTLINED_FUNCTION_0)
+                  0000a674    00000010     libclang_rt.builtins.a : adddf3.S.obj (.tramp.__aeabi_dsub.1)
+                  0000a684    0000000a     libc.a : _printfi.c.obj (.text.OUTLINED_FUNCTION_1)
+                  0000a68e    0000000a            : sprintf.c.obj (.text._outc)
+                  0000a698    00000008     libclang_rt.builtins.a : aeabi_ddiv.c.obj (.text.__aeabi_ddiv_fast)
+                  0000a6a0    00000008                            : aeabi_dmul.c.obj (.text.__aeabi_dmul_fast)
+                  0000a6a8    00000008     libc.a : aeabi_portable.c.obj (.text.__aeabi_errno_addr)
+                  0000a6b0    00000008     libclang_rt.builtins.a : aeabi_memcpy.S.obj (.text)
+                  0000a6b8    00000006     libc.a : exit.c.obj (.text:abort)
+                  0000a6be    00000004     libsysbm.a : hostexit.c.obj (.text.HOSTexit)
+                  0000a6c2    00000004     startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
+                  0000a6c6    00000004     libc.a : pre_init.c.obj (.text._system_pre_init)
+                  0000a6ca    00000004     odometer.o (.text.odometer_get_cm)
+                  0000a6ce    00000002     --HOLE-- [fill = 0]
+
+.cinit     0    0000b2c0    00000068     
+                  0000b2c0    0000003d     (.cinit..data.load) [load image, compression = lzss]
+                  0000b2fd    00000003     --HOLE-- [fill = 0]
+                  0000b300    0000000c     (__TI_handler_table)
+                  0000b30c    00000008     (.cinit..bss.load) [load image, compression = zero_init]
+                  0000b314    00000010     (__TI_cinit_table)
+                  0000b324    00000004     --HOLE-- [fill = 0]
+
+.rodata    0    0000a6d0    00000bf0     
+                  0000a6d0    00000228     zf_common_font.o (.rodata.ascii_font_6x8)
+                  0000a8f8    00000008     ti_msp_dl_config.o (.rodata.gVREFConfig)
+                  0000a900    00000101     libc.a : aeabi_ctype.S.obj (.rodata:__aeabi_ctype_table_)
+                  0000aa01    0000000f     car_app.o (.rodata.str1.12068630578194243009.1)
+                  0000aa10    00000100     vision_protocol.o (.rodata..L.crctable)
+                  0000ab10    000000b5     car_app.o (.rodata.str1.9578330528991434964.1)
+                  0000abc5    00000083     car_app.o (.rodata.str1.13873851818232568566.1)
+                  0000ac48    00000070     car_menu.o (.rodata.speed_table)
+                  0000acb8    0000004d     pid_test_serial.o (.rodata.str1.2211279377065458928.1)
+                  0000ad05    00000003     ti_msp_dl_config.o (.rodata.gLFCLKConfig)
+                  0000ad08    00000040     car_menu.o (.rodata.menu_items)
+                  0000ad48    0000003c     zf_driver_gpio.o (.rodata.gpio_iomux_index)
+                  0000ad84    00000039     car_app.o (.rodata.str1.2739880468474852379.1)
+                  0000adbd    00000034     car_app.o (.rodata.str1.13153994694740152375.1)
+                  0000adf1    0000002f     zf_driver_soft_iic.o (.rodata.str1.2263499941777376393.1)
+                  0000ae20    0000002c     zf_driver_timer.o (.rodata.str1.12283335766239798025.1)
+                  0000ae4c    0000002b     pid_test_serial.o (.rodata.str1.2505899516103837510.1)
+                  0000ae77    0000002b     zf_common_fifo.o (.rodata.str1.558461348082162513.1)
+                  0000aea2    0000002b     zf_driver_gpio.o (.rodata.str1.6088889122919705643.1)
+                  0000aecd    0000002b     zf_driver_uart.o (.rodata.str1.8900618411255323487.1)
+                  0000aef8    0000002a     zf_driver_pwm.o (.rodata.str1.13021947818153456226.1)
+                  0000af22    00000029     car_app.o (.rodata.str1.16622640185975898769.1)
+                  0000af4b    00000001     --HOLE-- [fill = 0]
+                  0000af4c    00000028     ti_msp_dl_config.o (.rodata.gSYSPLLConfig)
+                  0000af74    00000020     car_menu.o (.rodata..Lswitch.table.car_menu_task_name)
+                  0000af94    0000001c     zf_driver_timer.o (.rodata.timer_reg)
+                  0000afb0    00000019     zf_common_debug.o (.rodata.str1.16072987431022775220.1)
+                  0000afc9    00000019     car_app.o (.rodata.str1.6857981335910570263.1)
+                  0000afe2    00000015     zf_common_debug.o (.rodata.str1.14183976871916524833.1)
+                  0000aff7    00000015     car_menu.o (.rodata.str1.7088726320766232008.1)
+                  0000b00c    00000012     pid_test_serial.o (.rodata.str1.6992103953788795404.1)
+                  0000b01e    00000011     libc.a : _printfi.c.obj (.rodata.str1.10348868589481759720.1)
+                  0000b02f    00000011            : _printfi.c.obj (.rodata.str1.15363888844622738466.1)
+                  0000b040    00000010     wheel_encoder.o (.rodata.cst16)
+                  0000b050    00000010     zf_driver_uart.o (.rodata.cst16)
+                  0000b060    00000010     car_menu.o (.rodata.speed_names)
+                  0000b070    00000010     car_app.o (.rodata.str1.11914670372029332858.1)
+                  0000b080    00000010     car_menu.o (.rodata.str1.12940687504054971478.1)
+                  0000b090    00000010     car_app.o (.rodata.str1.17530460250989833863.1)
+                  0000b0a0    00000010     car_app.o (.rodata.str1.17982748996714822909.1)
+                  0000b0b0    00000010     car_app.o (.rodata.str1.9092089230642031807.1)
+                  0000b0c0    0000000f     car_app.o (.rodata.str1.13367630432784211044.1)
+                  0000b0cf    0000000f     car_app.o (.rodata.str1.1544236320644433617.1)
+                  0000b0de    0000000f     car_app.o (.rodata.str1.279829153773843536.1)
+                  0000b0ed    0000000f     car_app.o (.rodata.str1.2915005806891285624.1)
+                  0000b0fc    0000000e     car_app.o (.rodata.str1.14264209910100264713.1)
+                  0000b10a    0000000e     car_app.o (.rodata.str1.15950270075856357001.1)
+                  0000b118    0000000e     car_app.o (.rodata.str1.3623543132905117077.1)
+                  0000b126    0000000e     car_app.o (.rodata.str1.5741754197015817362.1)
+                  0000b134    0000000e     car_app.o (.rodata.str1.7035503279902913825.1)
+                  0000b142    0000000d     car_app.o (.rodata.str1.13995352636563993237.1)
+                  0000b14f    0000000d     zf_common_debug.o (.rodata.str1.14522211929966155318.1)
+                  0000b15c    0000000d     car_menu.o (.rodata.str1.3013897000361980945.1)
+                  0000b169    0000000d     car_menu.o (.rodata.str1.3069250358837569680.1)
+                  0000b176    0000000d     zf_common_debug.o (.rodata.str1.8362174927026723696.1)
+                  0000b183    0000000d     car_app.o (.rodata.str1.8536439994129229399.1)
+                  0000b190    0000000d     car_menu.o (.rodata.str1.9200641782593910517.1)
+                  0000b19d    0000000c     car_app.o (.rodata.str1.11306982495906117180.1)
+                  0000b1a9    0000000c     car_app.o (.rodata.str1.11529958260032138098.1)
+                  0000b1b5    0000000c     car_menu.o (.rodata.str1.16869838937351717478.1)
+                  0000b1c1    0000000c     car_app.o (.rodata.str1.16914309778208467960.1)
+                  0000b1cd    0000000c     car_menu.o (.rodata.str1.17804641894580945500.1)
+                  0000b1d9    0000000c     car_app.o (.rodata.str1.3405213586176933045.1)
+                  0000b1e5    0000000c     car_app.o (.rodata.str1.9734702439200605242.1)
+                  0000b1f1    0000000b     car_menu.o (.rodata.str1.1417754198158110686.1)
+                  0000b1fc    0000000b     car_menu.o (.rodata.str1.17801289967391569192.1)
+                  0000b207    0000000b     car_menu.o (.rodata.str1.6188137146644884486.1)
+                  0000b212    0000000a     car_menu.o (.rodata.str1.1203037037858228635.1)
+                  0000b21c    0000000a     zf_driver_uart.o (.rodata.uart_init.uart_default_config)
+                  0000b226    00000009     car_app.o (.rodata.str1.1125458591531430436.1)
+                  0000b22f    00000009     zf_common_debug.o (.rodata.str1.14377004991816336731.1)
+                  0000b238    00000009     car_app.o (.rodata.str1.337133574438597800.1)
+                  0000b241    00000009     zf_common_debug.o (.rodata.str1.7503597153484851823.1)
+                  0000b24a    00000008     car_app.o (.rodata.str1.10282639210068896820.1)
+                  0000b252    00000008     car_app.o (.rodata.str1.16212799817818818817.1)
+                  0000b25a    00000008     car_app.o (.rodata.str1.5144133821155060189.1)
+                  0000b262    00000008     car_app.o (.rodata.str1.8853624270310819241.1)
+                  0000b26a    00000008     car_app.o (.rodata.str1.9112693682940174766.1)
+                  0000b272    00000008     car_menu.o (.rodata.str1.974252014030279046.1)
+                  0000b27a    00000007     car_menu.o (.rodata.str1.1628881012776927048.1)
+                  0000b281    00000007     car_menu.o (.rodata.str1.5123590364071506849.1)
+                  0000b288    00000006     car_app.o (.rodata.str1.18316248719599611515.1)
+                  0000b28e    00000005     car_menu.o (.rodata.str1.10360311908504265348.1)
+                  0000b293    00000005     car_menu.o (.rodata.str1.1375657716264904954.1)
+                  0000b298    00000005     car_menu.o (.rodata.str1.363450473873520075.1)
+                  0000b29d    00000005     car_app.o (.rodata.str1.6239369372185359663.1)
+                  0000b2a2    00000005     car_menu.o (.rodata.str1.7227347356014471376.1)
+                  0000b2a7    00000005     car_app.o (.rodata.str1.7488005441964980209.1)
+                  0000b2ac    00000004     zf_driver_uart.o (.rodata.cst4)
+                  0000b2b0    00000004     car_app.o (.rodata.str1.4045235107630527151.1)
+                  0000b2b4    00000004     car_app.o (.rodata.str1.9125359532860806794.1)
+                  0000b2b8    00000003     car_app.o (.rodata.str1.15845139480854699785.1)
+                  0000b2bb    00000003     car_app.o (.rodata.str1.32591587251968256.1)
+                  0000b2be    00000002     zf_driver_uart.o (.rodata.uart_init.uart_clock_config)
+
+.init_array 
+*          0    00000000    00000000     UNINITIALIZED
+
+.binit     0    00000000    00000000     
+
+.bss       0    20200000    00003b92     UNINITIALIZED
+                  20200000    00003840     car_app.o (.bss.car_run_log)
+                  20203840    000001a8     car_app.o (.bss.car_context)
+                  202039e8    00000080     vision_uart.o (.bss.rx_buffer)
+                  20203a68    00000040     zdt_emm_v5.o (.bss.rx_buffer)
+                  20203aa8    00000028     car_menu.o (.bss.keys)
+                  20203ad0    0000001b     vision_uart.o (.bss.parser)
+                  20203aeb    00000016     (.common:debug_uart_fifo)
+                  20203b01    00000001     vision_uart.o (.bss.ball_seen)
+                  20203b02    00000002     zf_common_debug.o (.bss.debug_output_info.1)
+                  20203b04    00000010     car_app.o (.bss.car_oled_iic)
+                  20203b14    00000010     vision_uart.o (.bss.latest_ball)
+                  20203b24    00000010     mpu6050_yaw.o (.bss.mpu_iic)
+                  20203b34    00000005     vision_uart.o (.bss.latest_event)
+                  20203b39    00000001     zdt_emm_v5.o (.bss.consecutive_errors)
+                  20203b3a    00000002     zdt_emm_v5.o (.bss.target_offset)
+                  20203b3c    00000004     zdt_emm_v5.o (.bss.ack_count)
+                  20203b40    00000004     car_menu.o (.bss.clear_fn)
+                  20203b44    00000004     vision_uart.o (.bss.crc_error_count)
+                  20203b48    00000004     zf_common_debug.o (.bss.debug_output_info.5)
+                  20203b4c    00000004     zf_common_debug.o (.bss.debug_output_info.6)
+                  20203b50    00000004     zf_common_debug.o (.bss.debug_output_info.7)
+                  20203b54    00000004     zdt_emm_v5.o (.bss.error_count)
+                  20203b58    00000004     vision_uart.o (.bss.format_error_count)
+                  20203b5c    00000004     vision_uart.o (.bss.last_ball_tick)
+                  20203b60    00000004     vision_uart.o (.bss.last_packet_tick)
+                  20203b64    00000004     zdt_emm_v5.o (.bss.last_send_tick)
+                  20203b68    00000004     vision_uart.o (.bss.overflow_count)
+                  20203b6c    00000004     vision_uart.o (.bss.packet_count)
+                  20203b70    00000004     zdt_emm_v5.o (.bss.pending_since)
+                  20203b74    00000004     zdt_emm_v5.o (.bss.rx_overflow)
+                  20203b78    00000004     car_menu.o (.bss.text_fn)
+                  20203b7c    00000002     zf_common_debug.o (.bss.debug_output_info.0)
+                  20203b7e    00000001     zf_common_debug.o (.bss.debug_output_info.3)
+                  20203b7f    00000001     zf_common_debug.o (.bss.debug_output_info.4)
+                  20203b80    00000001     car_menu.o (.bss.first_visible)
+                  20203b81    00000001     zdt_emm_v5.o (.bss.last_status)
+                  20203b82    00000001     vision_uart.o (.bss.latest_event_sequence)
+                  20203b83    00000001     vision_uart.o (.bss.latest_event_type)
+                  20203b84    00000001     car_menu.o (.bss.opened)
+                  20203b85    00000001     vision_uart.o (.bss.packet_seen)
+                  20203b86    00000001     zdt_emm_v5.o (.bss.pending_function)
+                  20203b87    00000001     car_menu.o (.bss.pending_task)
+                  20203b88    00000001     pid_test_serial.o (.bss.pid_test_telemetry_divider)
+                  20203b89    00000001     car_menu.o (.bss.redraw)
+                  20203b8a    00000001     vision_uart.o (.bss.rx_head)
+                  20203b8b    00000001     zdt_emm_v5.o (.bss.rx_head)
+                  20203b8c    00000001     vision_uart.o (.bss.rx_tail)
+                  20203b8d    00000001     zdt_emm_v5.o (.bss.rx_tail)
+                  20203b8e    00000001     car_menu.o (.bss.selected)
+                  20203b8f    00000001     car_menu.o (.bss.speed_opened)
+                  20203b90    00000001     zdt_emm_v5.o (.bss.state)
+                  20203b91    00000001     vision_uart.o (.bss.tx_sequence)
+
+.data      0    20203b94    000001e7     UNINITIALIZED
+                  20203b94    00000080     zf_driver_exti.o (.data.exti_callback_list)
+                  20203c14    00000080     zf_driver_exti.o (.data.exti_callback_ptr_list)
+                  20203c94    0000001c     zf_driver_pit.o (.data.pit_callback_list)
+                  20203cb0    0000001c     zf_driver_pit.o (.data.pit_callback_ptr_list)
+                  20203ccc    00000010     zf_driver_uart.o (.data.uart_callback_list)
+                  20203cdc    00000010     zf_driver_uart.o (.data.uart_callback_ptr_list)
+                  20203cec    00000010     wheel_encoder.o (.data.wheel_encoder_edge_count)
+                  20203cfc    00000008     zf_driver_gpio.o (.data.gpio_group)
+                  20203d04    00000008     wheel_encoder.o (.data.wheel_encoder_callback_context)
+                  20203d0c    00000008     wheel_encoder.o (.data.wheel_encoder_count)
+                  20203d14    00000007     zf_driver_timer.o (.data.timer_function_state)
+                  20203d1b    00000007     zf_driver_timer.o (.data.timer_mode_state)
+                  20203d22    00000002     wheel_encoder.o (.data.wheel_encoder_previous_state)
+                  20203d24    00000004     libc.a : aeabi_portable.c.obj (.data.__aeabi_errno)
+                  20203d28    00000004     mpu6050_yaw.o (.data.filtered_gz)
+                  20203d2c    00000004     mpu6050_yaw.o (.data.gyro_bias_x_dps)
+                  20203d30    00000004     mpu6050_yaw.o (.data.gyro_bias_y_dps)
+                  20203d34    00000004     mpu6050_yaw.o (.data.gyro_bias_z_dps)
+                  20203d38    00000004     zf_common_interrupt.o (.data.interrupt_nest_count)
+                  20203d3c    00000004     mpu6050_yaw.o (.data.last_gz_valid)
+                  20203d40    00000004     mpu6050_yaw.o (.data.last_timer_ticks)
+                  20203d44    00000004     mpu6050_yaw.o (.data.latest_dt_ms)
+                  20203d48    00000004     mpu6050_yaw.o (.data.latest_gx_dps)
+                  20203d4c    00000004     mpu6050_yaw.o (.data.latest_gy_dps)
+                  20203d50    00000004     mpu6050_yaw.o (.data.latest_gz_dps)
+                  20203d54    00000004     mpu6050_yaw.o (.data.latest_timer_ticks)
+                  20203d58    00000004     mpu6050_yaw.o (.data.mount_axis_x)
+                  20203d5c    00000004     mpu6050_yaw.o (.data.mount_axis_y)
+                  20203d60    00000004     mpu6050_yaw.o (.data.mount_axis_z)
+                  20203d64    00000004     zf_driver_uart.o (.data.uart_interrupt_state)
+                  20203d68    00000004     mpu6050_yaw.o (.data.yaw_deg)
+                  20203d6c    00000004     mpu6050_yaw.o (.data.yaw_total_deg)
+                  20203d70    00000001     zdt_emm_v5.o (.data.brake_step_limit)
+                  20203d71    00000001     car_menu.o (.data.current_speed)
+                  20203d72    00000001     zf_common_debug.o (.data.debug_assert_handler.assert_nest_index)
+                  20203d73    00000001     zf_common_debug.o (.data.debug_uart_data)
+                  20203d74    00000001     zdt_emm_v5.o (.data.drive_step_limit)
+                  20203d75    00000001     mpu6050_yaw.o (.data.is_calibrated)
+                  20203d76    00000001     mpu6050_yaw.o (.data.is_initialized)
+                  20203d77    00000001     car_menu.o (.data.pending_speed)
+                  20203d78    00000001     mpu6050_yaw.o (.data.skip_first)
+                  20203d79    00000001     zf_common_debug.o (.data.zf_debug_assert_enable)
+                  20203d7a    00000001     zf_common_debug.o (.data.zf_debug_init_flag)
+
+.stack     0    20207000    00001000     UNINITIALIZED
+                  20207000    00000004     libc.a : boot_cortex_m.c.obj (.stack)
+                  20207004    00000ffc     --HOLE--
+
+__llvm_prf_cnts 
+*          0    20200000    00000000     UNINITIALIZED
+
+__llvm_prf_bits 
+*          0    20200000    00000000     UNINITIALIZED
+
+MODULE SUMMARY
+
+       Module                         code    ro data   rw data
+       ------                         ----    -------   -------
+    build\
+       car_app.o                      7772    870       14840  
+       mpu6050_yaw.o                  3500    0         83     
+       ball_balance.o                 2614    0         0      
+       zf_driver_soft_iic.o           2384    47        0      
+       car_menu.o                     1652    409       56     
+       line_follow.o                  1478    0         0      
+       zdt_emm_v5.o                   1264    0         94     
+       zf_common_fifo.o               1216    43        0      
+       vision_uart.o                  836     0         207    
+       zf_driver_uart.o               898     75        36     
+       zf_common_debug.o              874     90        44     
+       h_mission.o                    988     0         0      
+       vision_protocol.o              708     256       0      
+       speed_pid.o                    750     0         0      
+       zf_driver_gpio.o               624     103       8      
+       angle_pid.o                    626     0         0      
+       ti_msp_dl_config.o             544     51        0      
+       zf_common_font.o               0       552       0      
+       zf_driver_pwm.o                504     42        0      
+       pid_test_serial.o              348     138       1      
+       isr.o                          476     0         0      
+       zf_driver_exti.o               170     0         256    
+       zf_driver_timer.o              280     72        14     
+       tb6612.o                       364     0         0      
+       wheel_encoder.o                312     16        34     
+       line_sensor.o                  360     0         0      
+       zf_driver_delay.o              222     0         0      
+       zf_common_clock.o              216     0         0      
+       odometer.o                     204     0         0      
+       startup_mspm0g350x_ticlang.o   6       192       0      
+       zf_common_interrupt.o          82      0         4      
+       zf_driver_pit.o                2       0         56     
+       main.o                         24      0         0      
+    +--+------------------------------+-------+---------+---------+
+       Total:                         32298   2956      15733  
+                                                               
+    D:/ccs/mspm0_sdk_2_11_00_07/source/ti/driverlib/lib/ticlang/m0p/mspm0g1x0x_g3x0x/driverlib.a
+       dl_sysctl_mspm0g1x0x_g3x0x.o   512     0         0      
+       dl_uart.o                      90      0         0      
+       dl_vref.o                      34      0         0      
+       dl_common.o                    10      0         0      
+    +--+------------------------------+-------+---------+---------+
+       Total:                         646     0         0      
+                                                               
+    D:\ccs\ccs\tools\compiler\ti-cgt-armllvm_5.1.1.LTS\lib\armv6m-ti-none-eabi/c/libc.a
+       _printfi.c.obj                 4624    34        0      
+       divdf3_fast.c.obj              732     0         0      
+       muldf3_fast.c.obj              472     0         0      
+       aeabi_ctype.S.obj              0       257       0      
+       s_scalbn.c.obj                 220     0         0      
+       memcpy16.S.obj                 154     0         0      
+       snprintf.c.obj                 146     0         0      
+       copy_decompress_lzss.c.obj     124     0         0      
+       memset16.S.obj                 98      0         0      
+       s_frexp.c.obj                  92      0         0      
+       sprintf.c.obj                  90      0         0      
+       _ltoa.c.obj                    88      0         0      
+       atoi.c.obj                     68      0         0      
+       autoinit.c.obj                 60      0         0      
+       boot_cortex_m.c.obj            40      0         0      
+       memccpy.c.obj                  34      0         0      
+       copy_decompress_none.c.obj     18      0         0      
+       copy_zero_init.c.obj           16      0         0      
+       wcslen.c.obj                   16      0         0      
+       aeabi_portable.c.obj           8       0         4      
+       exit.c.obj                     6       0         0      
+       pre_init.c.obj                 4       0         0      
+    +--+------------------------------+-------+---------+---------+
+       Total:                         7110    291       4      
+                                                               
+    D:\ccs\ccs\tools\compiler\ti-cgt-armllvm_5.1.1.LTS\lib\armv6m-ti-none-eabi/c/libsysbm.a
+       hostexit.c.obj                 4       0         0      
+    +--+------------------------------+-------+---------+---------+
+       Total:                         4       0         0      
+                                                               
+    D:\ccs\ccs\tools\compiler\ti-cgt-armllvm_5.1.1.LTS\lib\armv6m-ti-none-eabi/libclang_rt.builtins.a
+       adddf3.S.obj                   418     0         0      
+       comparedf2.c.obj               268     0         0      
+       addsf3.S.obj                   216     0         0      
+       udivmoddi4.S.obj               162     0         0      
+       comparesf2.S.obj               140     0         0      
+       mulsf3.S.obj                   140     0         0      
+       divsf3.S.obj                   130     0         0      
+       aeabi_dcmp.S.obj               90      0         0      
+       aeabi_fcmp.S.obj               90      0         0      
+       aeabi_idivmod.S.obj            86      0         0      
+       fixdfsi.S.obj                  74      0         0      
+       aeabi_uidivmod.S.obj           64      0         0      
+       extendsfdf2.S.obj              64      0         0      
+       floatsisf.S.obj                60      0         0      
+       muldsi3.S.obj                  58      0         0      
+       fixsfsi.S.obj                  56      0         0      
+       fixunssfsi.S.obj               50      0         0      
+       floatsidf.S.obj                44      0         0      
+       floatunsisf.S.obj              40      0         0      
+       floatunsidf.S.obj              36      0         0      
+       muldi3.S.obj                   36      0         0      
+       ashldi3.S.obj                  30      0         0      
+       aeabi_memset.S.obj             26      0         0      
+       aeabi_uldivmod.S.obj           20      0         0      
+       aeabi_ddiv.c.obj               8       0         0      
+       aeabi_dmul.c.obj               8       0         0      
+       aeabi_memcpy.S.obj             8       0         0      
+       aeabi_div0.c.obj               4       0         0      
+    +--+------------------------------+-------+---------+---------+
+       Total:                         2426    0         0      
+                                                               
+       Stack:                         0       0         4096   
+       Linker Generated:              0       97        0      
+    +--+------------------------------+-------+---------+---------+
+       Grand Total:                   42484   3344      19833  
+
+
+LINKER GENERATED COPY TABLES
+
+__TI_cinit_table @ 0000b314 records: 2, size/record: 8, table size: 16
+	.data: load addr=0000b2c0, load size=0000003d bytes, run addr=20203b94, run size=000001e7 bytes, compression=lzss
+	.bss: load addr=0000b30c, load size=00000008 bytes, run addr=20200000, run size=00003b92 bytes, compression=zero_init
+
+
+LINKER GENERATED HANDLER TABLE
+
+__TI_handler_table @ 0000b300 records: 3, size/record: 4, table size: 12
+	index: 0, handler: __TI_decompress_lzss
+	index: 1, handler: __TI_decompress_none
+	index: 2, handler: __TI_zero_init
+
+
+FAR CALL TRAMPOLINES
+
+callee name               trampoline name
+   callee addr  tramp addr   call addr  call info
+--------------  -----------  ---------  ----------------
+__aeabi_dsub              $Tramp$TT$L$PI$$__aeabi_dsub
+   00005bc5     0000a674     0000a672   libc.a : _printfi.c.obj (.text.OUTLINED_FUNCTION_0)
+
+[1 trampolines]
+[1 trampoline calls]
+
+
+GLOBAL SYMBOLS: SORTED ALPHABETICALLY BY Name 
+
+address   name                                 
+-------   ----                                 
+00004dc7  ADC0_IRQHandler                      
+00004dc7  ADC1_IRQHandler                      
+00004dc7  AES_IRQHandler                       
+0000a6be  C$$EXIT                              
+00004dc7  CANFD0_IRQHandler                    
+00004dc7  DAC0_IRQHandler                      
+0000a661  DL_Common_delayCycles                
+0000a225  DL_SYSCTL_configFCC                  
+000076f9  DL_SYSCTL_configSYSPLL               
+000091c5  DL_SYSCTL_setHFCLKSourceHFXTParams   
+0000928d  DL_SYSCTL_setLFCLKSourceLFXT         
+00009955  DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK
+000098c5  DL_UART_init                         
+0000a4ed  DL_UART_setClockConfig               
+0000a0dd  DL_VREF_configReference              
+00004dc7  DMA_IRQHandler                       
+00004dc7  Default_Handler                      
+00004dc7  GROUP0_IRQHandler                    
+00009521  GROUP1_IRQHandler                    
+0000a6bf  HOSTexit                             
+00004dc7  HardFault_Handler                    
+00004dc7  I2C0_IRQHandler                      
+00004dc7  I2C1_IRQHandler                      
+00004dc7  NMI_Handler                          
+00004dc7  PendSV_Handler                       
+00004dc7  RTC_IRQHandler                       
+0000a6c3  Reset_Handler                        
+00004dc7  SPI0_IRQHandler                      
+00004dc7  SPI1_IRQHandler                      
+00004dc7  SVC_Handler                          
+0000a04d  SYSCFG_DL_GPIO_init                  
+00008869  SYSCFG_DL_SYSCTL_SYSPLL_init         
+00007451  SYSCFG_DL_SYSCTL_init                
+0000a241  SYSCFG_DL_SYSTICK_init               
+0000a4b1  SYSCFG_DL_VREF_init                  
+0000a303  SYSCFG_DL_init                       
+00009c91  SYSCFG_DL_initPower                  
+00004dc7  SysTick_Handler                      
+0000a31d  TIMA0_IRQHandler                     
+0000a335  TIMA1_IRQHandler                     
+0000a34d  TIMG0_IRQHandler                     
+0000a365  TIMG12_IRQHandler                    
+0000a37d  TIMG6_IRQHandler                     
+0000a395  TIMG7_IRQHandler                     
+0000a3ad  TIMG8_IRQHandler                     
+00009a65  UART0_IRQHandler                     
+00009d71  UART1_IRQHandler                     
+00009da5  UART2_IRQHandler                     
+00009dd9  UART3_IRQHandler                     
+20208000  __STACK_END                          
+00001000  __STACK_SIZE                         
+00000000  __TI_ATRegion0_region_sz             
+00000000  __TI_ATRegion0_src_addr              
+00000000  __TI_ATRegion0_trg_addr              
+00000000  __TI_ATRegion1_region_sz             
+00000000  __TI_ATRegion1_src_addr              
+00000000  __TI_ATRegion1_trg_addr              
+00000000  __TI_ATRegion2_region_sz             
+00000000  __TI_ATRegion2_src_addr              
+00000000  __TI_ATRegion2_trg_addr              
+0000b314  __TI_CINIT_Base                      
+0000b324  __TI_CINIT_Limit                     
+0000b324  __TI_CINIT_Warm                      
+0000b300  __TI_Handler_Table_Base              
+0000b30c  __TI_Handler_Table_Limit             
+00009bdd  __TI_auto_init_nobinit_nopinit       
+00008df1  __TI_decompress_lzss                 
+0000a547  __TI_decompress_none                 
+00009579  __TI_ltoa                            
+ffffffff  __TI_pprof_out_hndl                  
+000012f1  __TI_printfi                         
+ffffffff  __TI_prof_data_size                  
+ffffffff  __TI_prof_data_start                 
+00000000  __TI_static_base__                   
+0000a599  __TI_zero_init                       
+00005bcf  __adddf3                             
+00007a6f  __addsf3                             
+0000a900  __aeabi_ctype_table_                 
+0000a900  __aeabi_ctype_table_C                
+00009879  __aeabi_d2iz                         
+00005bcf  __aeabi_dadd                         
+00009469  __aeabi_dcmpeq                       
+0000949f  __aeabi_dcmpge                       
+000094b1  __aeabi_dcmpgt                       
+0000948d  __aeabi_dcmple                       
+0000947b  __aeabi_dcmplt                       
+00009e75  __aeabi_dcmpun                       
+0000a699  __aeabi_ddiv_fast                    
+0000a6a1  __aeabi_dmul_fast                    
+00005bc5  __aeabi_dsub                         
+20203d24  __aeabi_errno                        
+0000a6a9  __aeabi_errno_addr                   
+00009b25  __aeabi_f2d                          
+00009d39  __aeabi_f2iz                         
+00009e41  __aeabi_f2uiz                        
+00007a6f  __aeabi_fadd                         
+000094c5  __aeabi_fcmpeq                       
+000094fb  __aeabi_fcmpge                       
+0000950d  __aeabi_fcmpgt                       
+000094e9  __aeabi_fcmple                       
+000094d7  __aeabi_fcmplt                       
+00008bbf  __aeabi_fcmpun                       
+00008d6d  __aeabi_fdiv                         
+00008bd5  __aeabi_fmul                         
+00007a65  __aeabi_fsub                         
+00009f05  __aeabi_i2d                          
+00009c19  __aeabi_i2f                          
+000096d9  __aeabi_idiv                         
+00005d57  __aeabi_idiv0                        
+000096d9  __aeabi_idivmod                      
+0000872b  __aeabi_ldiv0                        
+0000a205  __aeabi_llsl                         
+0000a0b9  __aeabi_lmul                         
+0000a2f7  __aeabi_memclr                       
+0000a2f7  __aeabi_memclr4                      
+0000a2f7  __aeabi_memclr8                      
+0000a6b1  __aeabi_memcpy                       
+0000a6b1  __aeabi_memcpy4                      
+0000a6b1  __aeabi_memcpy8                      
+0000a2e9  __aeabi_memset                       
+0000a2e9  __aeabi_memset4                      
+0000a2e9  __aeabi_memset8                      
+0000a095  __aeabi_ui2d                         
+0000a025  __aeabi_ui2f                         
+00009ae5  __aeabi_uidiv                        
+00009ae5  __aeabi_uidivmod                     
+0000a4d9  __aeabi_uldivmod                     
+0000a205  __ashldi3                            
+ffffffff  __binit__                            
+00008fc1  __cmpdf2                             
+00008b49  __cmpsf2                             
+00003e71  __divdf3_fast                        
+00008d6d  __divsf3                             
+00008fc1  __eqdf2                              
+00008b49  __eqsf2                              
+00009b25  __extendsfdf2                        
+00009879  __fixdfsi                            
+00009d39  __fixsfsi                            
+00009e41  __fixunssfsi                         
+00009f05  __floatsidf                          
+00009c19  __floatsisf                          
+0000a095  __floatunsidf                        
+0000a025  __floatunsisf                        
+00008e6d  __gedf2                              
+00008b83  __gesf2                              
+00008e6d  __gtdf2                              
+00008b83  __gtsf2                              
+00008fc1  __ledf2                              
+00008b49  __lesf2                              
+00008fc1  __ltdf2                              
+00008b49  __ltsf2                              
+UNDEFED   __mpu_init                           
+000051b5  __muldf3_fast                        
+0000a0b9  __muldi3                             
+00009c55  __muldsi3                            
+00008bd5  __mulsf3                             
+00008fc1  __nedf2                              
+00008b49  __nesf2                              
+20207000  __stack                              
+20200000  __start___llvm_prf_bits              
+20200000  __start___llvm_prf_cnts              
+20200000  __stop___llvm_prf_bits               
+20200000  __stop___llvm_prf_cnts               
+00005bc5  __subdf3                             
+00007a65  __subsf3                             
+00008689  __udivmoddi4                         
+00009e75  __unorddf2                           
+00008bbf  __unordsf2                           
+00009ffd  _c_int00_noargs                      
+UNDEFED   _system_post_cinit                   
+0000a6c7  _system_pre_init                     
+0000a6b9  abort                                
+00008c61  afio_init                            
+0000a5a9  angle_pid_init                       
+0000a60b  angle_pid_reset                      
+00007f59  angle_pid_set_target                 
+00005d59  angle_pid_update                     
+0000a6d0  ascii_font_6x8                       
+00009999  atoi                                 
+0000a4ff  ball_balance_has_fault               
+0000a5b7  ball_balance_init                    
+0000a511  ball_balance_is_complete             
+00009f31  ball_balance_start                   
+0000a5c5  ball_balance_stop                    
+00001d6d  ball_balance_update                  
+ffffffff  binit                                
+000043e9  car_app_init                         
+000000c1  car_app_run                          
+0000a25d  car_menu_close                       
+0000a619  car_menu_get_speed_tier              
+0000a4c5  car_menu_get_speed_tier_params       
+00007b3d  car_menu_init                        
+0000a625  car_menu_is_open                     
+00009f5d  car_menu_open                        
+00005549  car_menu_render                      
+0000a145  car_menu_task_name                   
+000037b9  car_menu_update                      
+0000798d  clock_init                           
+00008abd  debug_assert_handler                 
+0000a165  debug_interrupr_handler              
+20203d73  debug_uart_data                      
+20203aeb  debug_uart_fifo                      
+20203b94  exti_callback_list                   
+20203c14  exti_callback_ptr_list               
+00008495  exti_init                            
+00002b09  fifo_write_buffer                    
+0000940d  frexp                                
+0000940d  frexpl                               
+0000a185  gpio_get_level                       
+20203cfc  gpio_group                           
+00007191  gpio_init                            
+0000ad48  gpio_iomux_index                     
+00008ce9  gpio_set_a0_a1_output                
+00009f85  gpio_set_level                       
+00009ed5  gpio_toggle_level                    
+0000a485  h_mission_car_allowed                
+0000a523  h_mission_finish_chassis             
+0000a3f5  h_mission_init                       
+0000872d  h_mission_prepare                    
+00008ee1  h_mission_start                      
+00009829  h_mission_stop                       
+00004b8d  h_mission_update                     
+00000000  interruptVectors                     
+0000a1a5  interrupt_disable                    
+0000a40d  interrupt_enable                     
+0000a425  interrupt_global_disable             
+00008def  interrupt_init                       
+000077d5  ldexp                                
+000077d5  ldexpl                               
+000097d9  line_follow_init                     
+0000a49b  line_follow_set_params               
+000025a9  line_follow_update                   
+00009029  line_sensor_init                     
+00006da9  line_sensor_read                     
+0000a43d  main                                 
+0000a0ff  memccpy                              
+000087cd  memcpy                               
+00009229  memset                               
+0000467d  mpu6050_yaw_calibrate                
+0000a631  mpu6050_yaw_get_angle                
+0000a63d  mpu6050_yaw_get_rate_dps             
+0000a649  mpu6050_yaw_get_total_angle          
+00004911  mpu6050_yaw_init                     
+0000a455  mpu6050_yaw_is_ready                 
+00007db9  mpu6050_yaw_set_angle                
+00002fc9  mpu6050_yaw_update                   
+00003b25  mpu6050_yaw_update_fast              
+0000a6cb  odometer_get_cm                      
+0000a5d3  odometer_init                        
+0000a5e1  odometer_reset                       
+000083e9  odometer_update                      
+0000a071  pid_test_serial_send_ack             
+00009b65  pid_test_serial_send_encoder         
+00006fa5  pid_test_serial_send_sample          
+20203c94  pit_callback_list                    
+20203cb0  pit_callback_ptr_list                
+00006335  pwm_init                             
+0000853d  pwm_set_duty                         
+000077d5  scalbn                               
+000077d5  scalbnl                              
+0000990d  snprintf                             
+000092ed  soft_iic_init                        
+00006485  soft_iic_read_8bit_registers         
+0000538d  soft_iic_read_data                   
+00008331  soft_iic_send_ack                    
+00005891  soft_iic_send_data                   
+00008021  soft_iic_start                       
+000080e9  soft_iic_stop                        
+0000727d  soft_iic_wait_ack                    
+00007c11  soft_iic_write_8bit_array            
+000099dd  soft_iic_write_8bit_register         
+0000a46d  speed_pid_init                       
+0000a2cd  speed_pid_set_start_duty             
+00006079  speed_pid_set_target                 
+000061d9  speed_pid_update                     
+00009cc9  sprintf                              
+000094c3  system_delay_init                    
+000078b1  system_delay_ms                      
+00008901  tb6612_init                          
+00009fad  tb6612_set_motor                     
+00009aa5  tb6612_stop_all                      
+0000a279  timer_clock_enable                   
+0000a295  timer_funciton_check                 
+20203d14  timer_function_state                 
+000081ad  timer_init                           
+0000af94  timer_reg                            
+0000a2b1  timer_start                          
+20203ccc  uart_callback_list                   
+20203cdc  uart_callback_ptr_list               
+00006ca5  uart_init                            
+00009ba1  uart_query_byte                      
+0000a1c5  uart_set_callback                    
+00007535  uart_set_interrupt_config            
+00007369  uart_write_buffer                    
+00009731  uart_write_string                    
+00007ce5  vision_protocol_build_command        
+0000915f  vision_protocol_decode_ball          
+0000934d  vision_protocol_decode_event         
+00006969  vision_protocol_feed                 
+0000a5fd  vision_protocol_parser_init          
+00007e89  vision_uart_get_snapshot             
+00008271  vision_uart_init                     
+00006a85  vision_uart_process                  
+00009a21  vision_uart_send_command             
+0000a559  wcslen                               
+0000a655  wheel_encoder_get_count              
+0000a569  wheel_encoder_get_edge_count         
+00009fd5  wheel_encoder_get_state              
+00008999  wheel_encoder_init                   
+00009091  zdt_emm_begin                        
+00009d01  zdt_emm_emergency_stop               
+0000a579  zdt_emm_has_fault                    
+00008a2d  zdt_emm_init                         
+0000a589  zdt_emm_is_ready                     
+000070a1  zdt_emm_request_target               
+000085e5  zdt_emm_return_home                  
+0000a1e5  zdt_emm_set_step_limits              
+00005a31  zdt_emm_update                       
+
+
+GLOBAL SYMBOLS: SORTED BY Symbol Address 
+
+address   name                                 
+-------   ----                                 
+00000000  __TI_ATRegion0_region_sz             
+00000000  __TI_ATRegion0_src_addr              
+00000000  __TI_ATRegion0_trg_addr              
+00000000  __TI_ATRegion1_region_sz             
+00000000  __TI_ATRegion1_src_addr              
+00000000  __TI_ATRegion1_trg_addr              
+00000000  __TI_ATRegion2_region_sz             
+00000000  __TI_ATRegion2_src_addr              
+00000000  __TI_ATRegion2_trg_addr              
+00000000  __TI_static_base__                   
+00000000  interruptVectors                     
+000000c1  car_app_run                          
+00001000  __STACK_SIZE                         
+000012f1  __TI_printfi                         
+00001d6d  ball_balance_update                  
+000025a9  line_follow_update                   
+00002b09  fifo_write_buffer                    
+00002fc9  mpu6050_yaw_update                   
+000037b9  car_menu_update                      
+00003b25  mpu6050_yaw_update_fast              
+00003e71  __divdf3_fast                        
+000043e9  car_app_init                         
+0000467d  mpu6050_yaw_calibrate                
+00004911  mpu6050_yaw_init                     
+00004b8d  h_mission_update                     
+00004dc7  ADC0_IRQHandler                      
+00004dc7  ADC1_IRQHandler                      
+00004dc7  AES_IRQHandler                       
+00004dc7  CANFD0_IRQHandler                    
+00004dc7  DAC0_IRQHandler                      
+00004dc7  DMA_IRQHandler                       
+00004dc7  Default_Handler                      
+00004dc7  GROUP0_IRQHandler                    
+00004dc7  HardFault_Handler                    
+00004dc7  I2C0_IRQHandler                      
+00004dc7  I2C1_IRQHandler                      
+00004dc7  NMI_Handler                          
+00004dc7  PendSV_Handler                       
+00004dc7  RTC_IRQHandler                       
+00004dc7  SPI0_IRQHandler                      
+00004dc7  SPI1_IRQHandler                      
+00004dc7  SVC_Handler                          
+00004dc7  SysTick_Handler                      
+000051b5  __muldf3_fast                        
+0000538d  soft_iic_read_data                   
+00005549  car_menu_render                      
+00005891  soft_iic_send_data                   
+00005a31  zdt_emm_update                       
+00005bc5  __aeabi_dsub                         
+00005bc5  __subdf3                             
+00005bcf  __adddf3                             
+00005bcf  __aeabi_dadd                         
+00005d57  __aeabi_idiv0                        
+00005d59  angle_pid_update                     
+00006079  speed_pid_set_target                 
+000061d9  speed_pid_update                     
+00006335  pwm_init                             
+00006485  soft_iic_read_8bit_registers         
+00006969  vision_protocol_feed                 
+00006a85  vision_uart_process                  
+00006ca5  uart_init                            
+00006da9  line_sensor_read                     
+00006fa5  pid_test_serial_send_sample          
+000070a1  zdt_emm_request_target               
+00007191  gpio_init                            
+0000727d  soft_iic_wait_ack                    
+00007369  uart_write_buffer                    
+00007451  SYSCFG_DL_SYSCTL_init                
+00007535  uart_set_interrupt_config            
+000076f9  DL_SYSCTL_configSYSPLL               
+000077d5  ldexp                                
+000077d5  ldexpl                               
+000077d5  scalbn                               
+000077d5  scalbnl                              
+000078b1  system_delay_ms                      
+0000798d  clock_init                           
+00007a65  __aeabi_fsub                         
+00007a65  __subsf3                             
+00007a6f  __addsf3                             
+00007a6f  __aeabi_fadd                         
+00007b3d  car_menu_init                        
+00007c11  soft_iic_write_8bit_array            
+00007ce5  vision_protocol_build_command        
+00007db9  mpu6050_yaw_set_angle                
+00007e89  vision_uart_get_snapshot             
+00007f59  angle_pid_set_target                 
+00008021  soft_iic_start                       
+000080e9  soft_iic_stop                        
+000081ad  timer_init                           
+00008271  vision_uart_init                     
+00008331  soft_iic_send_ack                    
+000083e9  odometer_update                      
+00008495  exti_init                            
+0000853d  pwm_set_duty                         
+000085e5  zdt_emm_return_home                  
+00008689  __udivmoddi4                         
+0000872b  __aeabi_ldiv0                        
+0000872d  h_mission_prepare                    
+000087cd  memcpy                               
+00008869  SYSCFG_DL_SYSCTL_SYSPLL_init         
+00008901  tb6612_init                          
+00008999  wheel_encoder_init                   
+00008a2d  zdt_emm_init                         
+00008abd  debug_assert_handler                 
+00008b49  __cmpsf2                             
+00008b49  __eqsf2                              
+00008b49  __lesf2                              
+00008b49  __ltsf2                              
+00008b49  __nesf2                              
+00008b83  __gesf2                              
+00008b83  __gtsf2                              
+00008bbf  __aeabi_fcmpun                       
+00008bbf  __unordsf2                           
+00008bd5  __aeabi_fmul                         
+00008bd5  __mulsf3                             
+00008c61  afio_init                            
+00008ce9  gpio_set_a0_a1_output                
+00008d6d  __aeabi_fdiv                         
+00008d6d  __divsf3                             
+00008def  interrupt_init                       
+00008df1  __TI_decompress_lzss                 
+00008e6d  __gedf2                              
+00008e6d  __gtdf2                              
+00008ee1  h_mission_start                      
+00008fc1  __cmpdf2                             
+00008fc1  __eqdf2                              
+00008fc1  __ledf2                              
+00008fc1  __ltdf2                              
+00008fc1  __nedf2                              
+00009029  line_sensor_init                     
+00009091  zdt_emm_begin                        
+0000915f  vision_protocol_decode_ball          
+000091c5  DL_SYSCTL_setHFCLKSourceHFXTParams   
+00009229  memset                               
+0000928d  DL_SYSCTL_setLFCLKSourceLFXT         
+000092ed  soft_iic_init                        
+0000934d  vision_protocol_decode_event         
+0000940d  frexp                                
+0000940d  frexpl                               
+00009469  __aeabi_dcmpeq                       
+0000947b  __aeabi_dcmplt                       
+0000948d  __aeabi_dcmple                       
+0000949f  __aeabi_dcmpge                       
+000094b1  __aeabi_dcmpgt                       
+000094c3  system_delay_init                    
+000094c5  __aeabi_fcmpeq                       
+000094d7  __aeabi_fcmplt                       
+000094e9  __aeabi_fcmple                       
+000094fb  __aeabi_fcmpge                       
+0000950d  __aeabi_fcmpgt                       
+00009521  GROUP1_IRQHandler                    
+00009579  __TI_ltoa                            
+000096d9  __aeabi_idiv                         
+000096d9  __aeabi_idivmod                      
+00009731  uart_write_string                    
+000097d9  line_follow_init                     
+00009829  h_mission_stop                       
+00009879  __aeabi_d2iz                         
+00009879  __fixdfsi                            
+000098c5  DL_UART_init                         
+0000990d  snprintf                             
+00009955  DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK
+00009999  atoi                                 
+000099dd  soft_iic_write_8bit_register         
+00009a21  vision_uart_send_command             
+00009a65  UART0_IRQHandler                     
+00009aa5  tb6612_stop_all                      
+00009ae5  __aeabi_uidiv                        
+00009ae5  __aeabi_uidivmod                     
+00009b25  __aeabi_f2d                          
+00009b25  __extendsfdf2                        
+00009b65  pid_test_serial_send_encoder         
+00009ba1  uart_query_byte                      
+00009bdd  __TI_auto_init_nobinit_nopinit       
+00009c19  __aeabi_i2f                          
+00009c19  __floatsisf                          
+00009c55  __muldsi3                            
+00009c91  SYSCFG_DL_initPower                  
+00009cc9  sprintf                              
+00009d01  zdt_emm_emergency_stop               
+00009d39  __aeabi_f2iz                         
+00009d39  __fixsfsi                            
+00009d71  UART1_IRQHandler                     
+00009da5  UART2_IRQHandler                     
+00009dd9  UART3_IRQHandler                     
+00009e41  __aeabi_f2uiz                        
+00009e41  __fixunssfsi                         
+00009e75  __aeabi_dcmpun                       
+00009e75  __unorddf2                           
+00009ed5  gpio_toggle_level                    
+00009f05  __aeabi_i2d                          
+00009f05  __floatsidf                          
+00009f31  ball_balance_start                   
+00009f5d  car_menu_open                        
+00009f85  gpio_set_level                       
+00009fad  tb6612_set_motor                     
+00009fd5  wheel_encoder_get_state              
+00009ffd  _c_int00_noargs                      
+0000a025  __aeabi_ui2f                         
+0000a025  __floatunsisf                        
+0000a04d  SYSCFG_DL_GPIO_init                  
+0000a071  pid_test_serial_send_ack             
+0000a095  __aeabi_ui2d                         
+0000a095  __floatunsidf                        
+0000a0b9  __aeabi_lmul                         
+0000a0b9  __muldi3                             
+0000a0dd  DL_VREF_configReference              
+0000a0ff  memccpy                              
+0000a145  car_menu_task_name                   
+0000a165  debug_interrupr_handler              
+0000a185  gpio_get_level                       
+0000a1a5  interrupt_disable                    
+0000a1c5  uart_set_callback                    
+0000a1e5  zdt_emm_set_step_limits              
+0000a205  __aeabi_llsl                         
+0000a205  __ashldi3                            
+0000a225  DL_SYSCTL_configFCC                  
+0000a241  SYSCFG_DL_SYSTICK_init               
+0000a25d  car_menu_close                       
+0000a279  timer_clock_enable                   
+0000a295  timer_funciton_check                 
+0000a2b1  timer_start                          
+0000a2cd  speed_pid_set_start_duty             
+0000a2e9  __aeabi_memset                       
+0000a2e9  __aeabi_memset4                      
+0000a2e9  __aeabi_memset8                      
+0000a2f7  __aeabi_memclr                       
+0000a2f7  __aeabi_memclr4                      
+0000a2f7  __aeabi_memclr8                      
+0000a303  SYSCFG_DL_init                       
+0000a31d  TIMA0_IRQHandler                     
+0000a335  TIMA1_IRQHandler                     
+0000a34d  TIMG0_IRQHandler                     
+0000a365  TIMG12_IRQHandler                    
+0000a37d  TIMG6_IRQHandler                     
+0000a395  TIMG7_IRQHandler                     
+0000a3ad  TIMG8_IRQHandler                     
+0000a3f5  h_mission_init                       
+0000a40d  interrupt_enable                     
+0000a425  interrupt_global_disable             
+0000a43d  main                                 
+0000a455  mpu6050_yaw_is_ready                 
+0000a46d  speed_pid_init                       
+0000a485  h_mission_car_allowed                
+0000a49b  line_follow_set_params               
+0000a4b1  SYSCFG_DL_VREF_init                  
+0000a4c5  car_menu_get_speed_tier_params       
+0000a4d9  __aeabi_uldivmod                     
+0000a4ed  DL_UART_setClockConfig               
+0000a4ff  ball_balance_has_fault               
+0000a511  ball_balance_is_complete             
+0000a523  h_mission_finish_chassis             
+0000a547  __TI_decompress_none                 
+0000a559  wcslen                               
+0000a569  wheel_encoder_get_edge_count         
+0000a579  zdt_emm_has_fault                    
+0000a589  zdt_emm_is_ready                     
+0000a599  __TI_zero_init                       
+0000a5a9  angle_pid_init                       
+0000a5b7  ball_balance_init                    
+0000a5c5  ball_balance_stop                    
+0000a5d3  odometer_init                        
+0000a5e1  odometer_reset                       
+0000a5fd  vision_protocol_parser_init          
+0000a60b  angle_pid_reset                      
+0000a619  car_menu_get_speed_tier              
+0000a625  car_menu_is_open                     
+0000a631  mpu6050_yaw_get_angle                
+0000a63d  mpu6050_yaw_get_rate_dps             
+0000a649  mpu6050_yaw_get_total_angle          
+0000a655  wheel_encoder_get_count              
+0000a661  DL_Common_delayCycles                
+0000a699  __aeabi_ddiv_fast                    
+0000a6a1  __aeabi_dmul_fast                    
+0000a6a9  __aeabi_errno_addr                   
+0000a6b1  __aeabi_memcpy                       
+0000a6b1  __aeabi_memcpy4                      
+0000a6b1  __aeabi_memcpy8                      
+0000a6b9  abort                                
+0000a6be  C$$EXIT                              
+0000a6bf  HOSTexit                             
+0000a6c3  Reset_Handler                        
+0000a6c7  _system_pre_init                     
+0000a6cb  odometer_get_cm                      
+0000a6d0  ascii_font_6x8                       
+0000a900  __aeabi_ctype_table_                 
+0000a900  __aeabi_ctype_table_C                
+0000ad48  gpio_iomux_index                     
+0000af94  timer_reg                            
+0000b300  __TI_Handler_Table_Base              
+0000b30c  __TI_Handler_Table_Limit             
+0000b314  __TI_CINIT_Base                      
+0000b324  __TI_CINIT_Limit                     
+0000b324  __TI_CINIT_Warm                      
+20200000  __start___llvm_prf_bits              
+20200000  __start___llvm_prf_cnts              
+20200000  __stop___llvm_prf_bits               
+20200000  __stop___llvm_prf_cnts               
+20203aeb  debug_uart_fifo                      
+20203b94  exti_callback_list                   
+20203c14  exti_callback_ptr_list               
+20203c94  pit_callback_list                    
+20203cb0  pit_callback_ptr_list                
+20203ccc  uart_callback_list                   
+20203cdc  uart_callback_ptr_list               
+20203cfc  gpio_group                           
+20203d14  timer_function_state                 
+20203d24  __aeabi_errno                        
+20203d73  debug_uart_data                      
+20207000  __stack                              
+20208000  __STACK_END                          
+ffffffff  __TI_pprof_out_hndl                  
+ffffffff  __TI_prof_data_size                  
+ffffffff  __TI_prof_data_start                 
+ffffffff  __binit__                            
+ffffffff  binit                                
+UNDEFED   __mpu_init                           
+UNDEFED   _system_post_cinit                   
+
+[318 symbols]

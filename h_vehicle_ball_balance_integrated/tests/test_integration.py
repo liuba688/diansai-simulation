@@ -88,6 +88,21 @@ class SourceContractTests(unittest.TestCase):
         self.assertIn("TASK3_VISION_GRACE_TICKS", source)
         self.assertIn("task3_completion_priority_v7", source)
 
+    def test_x42s_uses_one_power_on_zero_and_returns_home(self):
+        driver = (ROOT / "mspm0/project/code/zdt_emm_v5.c").read_text(
+            encoding="utf-8"
+        )
+        app = (ROOT / "mspm0/project/code/car_app.c").read_text(
+            encoding="utf-8"
+        )
+        mission = (ROOT / "mspm0/project/code/h_mission.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("zdt_emm_begin(0U)", app)
+        self.assertIn("ZDT_EMM_READY == state", driver)
+        self.assertIn("zdt_emm_return_home", driver)
+        self.assertGreaterEqual(mission.count("zdt_emm_return_home"), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

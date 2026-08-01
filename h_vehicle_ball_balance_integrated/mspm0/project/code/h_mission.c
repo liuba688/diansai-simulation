@@ -124,9 +124,7 @@ void h_mission_update(h_mission_t *m,
         else if(tick - m->state_tick >= START_TIMEOUT_TICKS)
         { m->fault_code = 11U; m->state = H_MISSION_FAULT; }
     }
-    else if((H_MISSION_RUNNING == m->state)
-            || (H_MISSION_FINISHED == m->state
-                && CAR_TASK_3_ROUND_TRIP == m->task))
+    else if(H_MISSION_RUNNING == m->state)
     {
         if(new_event && VISION_MSG_FAULT == v->event_type)
         { m->fault_code = v->event.fault_code ? v->event.fault_code : 12U; m->state = H_MISSION_FAULT; }
@@ -148,7 +146,12 @@ void h_mission_update(h_mission_t *m,
                 if(CAR_TASK_3_ROUND_TRIP == m->task
                    && H_MISSION_RUNNING == m->state
                    && ball_balance_is_complete(&m->balance))
-                { m->stop_tick = tick; m->state = H_MISSION_FINISHED; }
+                {
+                    m->stop_tick = tick;
+                    ball_balance_stop(&m->balance);
+                    if(!zdt_emm_return_home(tick)) zdt_emm_emergency_stop();
+                    m->state = H_MISSION_FINISHED;
+                }
             }
         }
         if(h_mission_needs_balance(m->task) && zdt_emm_has_fault())
@@ -179,8 +182,9 @@ void h_mission_stop(h_mission_t *m, uint8_t reason, uint32_t tick)
 {
     if(NULL == m) return;
     send_command(VISION_MSG_STOP, m, car_menu_get_speed_tier(), reason, tick);
-    zdt_emm_emergency_stop();
     ball_balance_stop(&m->balance);
+    /* BACK returns to the single power-on level zero during normal operation. */
+    if(!zdt_emm_return_home(tick)) zdt_emm_emergency_stop();
     m->stop_tick = tick; m->state = H_MISSION_MENU;
     m->task = CAR_TASK_NONE; m->route = H_ROUTE_NONE;
 }

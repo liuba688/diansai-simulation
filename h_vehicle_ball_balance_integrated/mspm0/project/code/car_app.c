@@ -1357,6 +1357,8 @@ void car_app_init(void)
 
     vision_uart_init();
     zdt_emm_init();
+    /* The X42S shaft position at this power-up is the one persistent level zero. */
+    zdt_emm_begin(0U);
     h_mission_init(&car_context.mission);
 
     gpio_init(B16, GPO, 0U, GPO_PUSH_PULL);

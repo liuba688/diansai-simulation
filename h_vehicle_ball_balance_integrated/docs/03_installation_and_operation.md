@@ -2,10 +2,13 @@
 
 ## 1. MSPM0 烧录
 
-最新交付文件：`dist/h_vehicle_ball_balance_mspm0g3507_v1.0.2.hex`。
+最新交付文件：`dist/h_vehicle_ball_balance_mspm0g3507_v1.0.3.hex`。
 
 可用 UniFlash/CCS/XDS 烧录 Intel HEX。烧录后先不接 X42S 连杆，复位并确认 OLED 出现
-八项菜单。需要调试符号时使用 `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.2.out`。
+八项菜单。需要调试符号时使用 `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.3.out`。
+
+烧录后的首次动作测试必须拆球并脱开连杆。每次整车与 X42S 共同上电前先人工将水管调平；
+程序只在本次上电初始化时建立一次软件水平零点，Task 3 完成或按 BACK 后返回该零点。
 
 源码重建：
 
