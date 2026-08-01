@@ -36,6 +36,7 @@ typedef struct
     uint32_t start_tick;
     uint32_t stable_tick;
     uint32_t stiction_tick;
+    uint32_t invalid_tick;
     uint8_t stiction_active;
     uint8_t quiet_hold_active;
     uint8_t fault_code;

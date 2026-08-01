@@ -4,10 +4,12 @@
 #include <string.h>
 
 #define TICK_S (0.010f)
+#define TASK3_VISION_GRACE_TICKS (100U) /* Hold level for 1 s before a real vision fault. */
 
 /*
  * TASK3 source: maix-h-task3-round-trip-bench-v3.4.5,
- * profile task3_early_biased_release_v6.
+ * profile task3_completion_priority_v7.  Task 3 has no scoring-time fault:
+ * the settle controllers may restart the ball as many times as necessary.
  * TASK4/5 source: maix-h_task4_center_hold_bench-v4.2.5-in-spec-latch,
  * profile task4_in_spec_latch_v11.
  */
@@ -90,17 +92,29 @@ static void update_task3(ball_balance_t *c, float x, float v,
         c->requested_angle_deg = 0.0f;
         return;
     }
-    if(BALL_STATE_COMPLETE != c->state)
+    /*
+     * Completion has priority over the five-second scoring target.  A missed
+     * scoring band is not a fault; POS_SETTLE/NEG_SETTLE keep correcting and
+     * their stiction boost naturally provides second or later breakaway runs.
+     * A short vision dropout levels the beam instead of aborting the attempt.
+     */
+    if(!valid)
     {
-        if(!valid) { c->fault_code = 1U; enter_state(c, BALL_STATE_SAFE_STOP, tick); }
-        else if(absf_local(x) >= 105.0f)
-        { c->fault_code = 2U; enter_state(c, BALL_STATE_SAFE_STOP, tick); }
-        else if(tick - c->start_tick >= 500U)
-        { c->fault_code = 3U; enter_state(c, BALL_STATE_SAFE_STOP, tick); }
+        if(c->invalid_tick < TASK3_VISION_GRACE_TICKS) c->invalid_tick++;
+        if(c->invalid_tick >= TASK3_VISION_GRACE_TICKS)
+        {
+            c->fault_code = 1U;
+            enter_state(c, BALL_STATE_SAFE_STOP, tick);
+        }
+        c->requested_angle_deg = 0.0f;
+        return;
     }
-    else if(!valid || absf_local(x) >= 105.0f)
+    c->invalid_tick = 0U;
+
+    /* Keep only the physical end-stop safety boundary, not a scoring timeout. */
+    if(absf_local(x) >= 105.0f)
     {
-        c->fault_code = !valid ? 1U : 2U;
+        c->fault_code = 2U;
         enter_state(c, BALL_STATE_SAFE_STOP, tick);
     }
     if(BALL_STATE_SAFE_STOP == c->state) { c->requested_angle_deg = 0.0f; return; }

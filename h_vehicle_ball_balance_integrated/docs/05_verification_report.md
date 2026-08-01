@@ -27,7 +27,7 @@
 | 两次 OK | CONFIGURING/READY/STARTING 状态机 |
 | 四档速度 | 复用四组已测参数，默认 FAST |
 | 距离固定绑定 | Task 4=150 cm；Task 2/5=RACE LINE |
-| Task 3 | v3.4.5 参数/状态机 C 移植 |
+| Task 3 | v3.4.5 参数/状态机 C 移植；v1.0.2 完成优先、无 5 s 故障退出 |
 | Task 4/5 | v4.2.5 参数/滞回/斜率 C 移植 |
 | Task 6 空出 | 菜单明确保留且禁止运动 |
 | 固件和相机包 | dist 中 HEX/OUT/Maix ZIP |
@@ -39,7 +39,7 @@
 1. 烧录后四键和 OLED 页面回归。
 2. 逻辑分析仪确认 UART2 MODE_SELECT/READY/STARTED 与 task/run 一致。
 3. 脱开连杆确认 UART1 `F3/FD/FE` 回包、TTL 电平和 BACK 独立急停。
-4. 新链路下 Task 3 至少连续三轮 ≤5 s，正负端均在 ±10 mm 误差范围。
+4. 新链路下 Task 3 至少连续三轮完成；记录是否 ≤5 s，并确认正负端均进入 ±10 mm 误差范围。
 5. Task 4 在小车 A-B 全过程保持 ±10 mm 且 ≤8 s。
 6. Task 5 全圈保持 ±10 mm 且 ≤30 s。
 7. 环线外设备对 Task 1-5 每次测试完整录像并能回放。

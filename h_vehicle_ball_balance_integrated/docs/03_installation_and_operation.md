@@ -2,10 +2,10 @@
 
 ## 1. MSPM0 烧录
 
-交付文件：`dist/h_vehicle_ball_balance_mspm0g3507_v1.0.0.hex`。
+最新交付文件：`dist/h_vehicle_ball_balance_mspm0g3507_v1.0.2.hex`。
 
 可用 UniFlash/CCS/XDS 烧录 Intel HEX。烧录后先不接 X42S 连杆，复位并确认 OLED 出现
-八项菜单。需要调试符号时使用 `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.0.out`。
+八项菜单。需要调试符号时使用 `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.2.out`。
 
 源码重建：
 
@@ -84,9 +84,8 @@ Task 6 当前显示保留提示并返回菜单，绝不会启动底盘。
 | WAIT CAM READY | 配置阶段误按启动 | 等 READY，不会运动 |
 | MISSION FAULT CODE 10 | MODE_READY 重试失败 | 查相机程序和 TX/RX |
 | CODE 11 | STARTED 300 ms 超时 | 查相机是否仍 READY |
-| CODE 21 | 运行中视觉超时 | 停车，查遮挡/帧率/UART |
+| CODE 21 | Task 3 连续 1 s 无有效视觉 | 停车，查遮挡/帧率/UART |
 | CODE 22 | 球接近端部 | 取下球并查方向/参数 |
-| CODE 23 | Task 3 超过 5 s | 查静摩擦、零点和通信延迟 |
 | CODE 30 | X42S 连续错误 | 查 TTL版本、地址、0x6B、供电和共地 |
 | CODE 31 | 相机心跳超时 | 查相机进程/UART |
 

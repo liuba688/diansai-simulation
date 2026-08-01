@@ -80,6 +80,14 @@ class SourceContractTests(unittest.TestCase):
         self.assertIn("0xFEU", driver)
         self.assertNotIn("0xFCU", driver)
 
+    def test_task3_is_completion_priority(self):
+        source = (ROOT / "mspm0/project/code/ball_balance.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("tick - c->start_tick >= 500U", source)
+        self.assertIn("TASK3_VISION_GRACE_TICKS", source)
+        self.assertIn("task3_completion_priority_v7", source)
+
 
 if __name__ == "__main__":
     unittest.main()
