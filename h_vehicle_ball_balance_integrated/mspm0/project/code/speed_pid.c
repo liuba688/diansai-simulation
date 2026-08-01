@@ -1,0 +1,144 @@
+#include "speed_pid.h"
+
+static float speed_pid_limit (float value, float limit)
+{
+    if(value > limit)
+    {
+        value = limit;
+    }
+    else if(value < -limit)
+    {
+        value = -limit;
+    }
+    return value;
+}
+
+static float speed_pid_sign (float value)
+{
+    if(value > 0.0f)
+    {
+        return 1.0f;
+    }
+    else if(value < 0.0f)
+    {
+        return -1.0f;
+    }
+    return 0.0f;
+}
+
+void speed_pid_init (speed_pid_struct *pid)
+{
+    pid->target_rpm = 0.0f;
+    pid->raw_rpm = 0.0f;
+    pid->measured_rpm = 0.0f;
+    pid->output = 0.0f;
+    pid->error_1 = 0.0f;
+    pid->error_2 = 0.0f;
+    pid->start_duty = SPEED_PID_START_DUTY;
+}
+
+void speed_pid_reset (speed_pid_struct *pid)
+{
+    float target_rpm = pid->target_rpm;
+    float start_duty = pid->start_duty;
+    speed_pid_init(pid);
+    pid->target_rpm = target_rpm;
+    pid->start_duty = start_duty;
+}
+
+void speed_pid_set_target (speed_pid_struct *pid, float target_rpm)
+{
+    float old_abs;
+    float new_abs;
+    float release_duty;
+
+    if((0.0f == target_rpm)
+       || ((pid->target_rpm > 0.0f) && (target_rpm < 0.0f))
+       || ((pid->target_rpm < 0.0f) && (target_rpm > 0.0f)))
+    {
+        speed_pid_reset(pid);
+    }
+    else
+    {
+        old_abs = (pid->target_rpm >= 0.0f)
+                ? pid->target_rpm : -pid->target_rpm;
+        new_abs = (target_rpm >= 0.0f) ? target_rpm : -target_rpm;
+
+        /*
+         * Release only a bounded amount of retained PI duty when slowing.
+         * Proportional scaling on every small line correction made straight
+         * running lose too much accumulated output and feel intermittent.
+         */
+        if((old_abs > 1.0f) && ((old_abs - new_abs) >= 0.5f))
+        {
+            if((old_abs - new_abs)
+               >= SPEED_PID_LARGE_DECEL_THRESHOLD_RPM)
+            {
+                release_duty = (old_abs - new_abs)
+                             * SPEED_PID_LARGE_DECEL_DUTY_PER_RPM;
+                if(release_duty > SPEED_PID_LARGE_DECEL_MAX_DUTY)
+                {
+                    release_duty = SPEED_PID_LARGE_DECEL_MAX_DUTY;
+                }
+            }
+            else
+            {
+                release_duty = (old_abs - new_abs)
+                             * SPEED_PID_DECEL_RELEASE_DUTY_PER_RPM;
+                if(release_duty > SPEED_PID_DECEL_RELEASE_MAX_DUTY)
+                {
+                    release_duty = SPEED_PID_DECEL_RELEASE_MAX_DUTY;
+                }
+            }
+            pid->output -= speed_pid_sign(pid->target_rpm)
+                         * release_duty;
+            pid->output = speed_pid_limit(pid->output,
+                                          SPEED_PID_OUTPUT_LIMIT);
+        }
+    }
+    pid->target_rpm = target_rpm;
+}
+
+void speed_pid_set_start_duty (speed_pid_struct *pid, float start_duty)
+{
+    if(start_duty < 0.0f)
+    {
+        start_duty = 0.0f;
+    }
+    pid->start_duty = start_duty;
+}
+
+int16 speed_pid_update (speed_pid_struct *pid, int32 encoder_delta,
+                        float kp, float ki, float kd)
+{
+    float error;
+    float increment;
+    float drive_output;
+
+    pid->raw_rpm = ((float)encoder_delta * 60000.0f)
+                 / (MOTOR_ENCODER_COUNTS_PER_REV * SPEED_PID_PERIOD_MS);
+    pid->measured_rpm += SPEED_PID_FILTER_ALPHA
+                       * (pid->raw_rpm - pid->measured_rpm);
+
+    if(0.0f == pid->target_rpm)
+    {
+        speed_pid_reset(pid);
+        return 0;
+    }
+
+    error = pid->target_rpm - pid->measured_rpm;
+    increment = kp * (error - pid->error_1)
+              + ki * error
+              + kd * (error - 2.0f * pid->error_1 + pid->error_2);
+
+    pid->output = speed_pid_limit(pid->output + increment,
+                                  SPEED_PID_OUTPUT_LIMIT);
+    pid->error_2 = pid->error_1;
+    pid->error_1 = error;
+
+    drive_output = speed_pid_sign(pid->target_rpm) * pid->start_duty
+                 + pid->output;
+    drive_output = speed_pid_limit(drive_output, SPEED_PID_OUTPUT_LIMIT);
+
+    return (int16)drive_output;
+}

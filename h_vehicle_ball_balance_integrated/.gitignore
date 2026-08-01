@@ -1,0 +1,4 @@
+mspm0/project/ccs/build/
+**/__pycache__/
+*.pyc
+*.log

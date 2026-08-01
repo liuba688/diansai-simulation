@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectSpec>
+    <applicability>
+        <when>
+            <context deviceFamily="ARM" deviceId="MSPM0G3507"/>
+        </when>
+    </applicability>
+
+    <project
+        title="MSPM0G3507 Ball Car"
+        name="mspm0g3507_ball_car"
+        configurations="Debug"
+        toolChain="TICLANG"
+        connection="TIXDS110_Connection.xml"
+        device="MSPM0G3507"
+        ignoreDefaultDeviceSettings="true"
+        ignoreDefaultCCSSettings="true"
+        products="MSPM0-SDK"
+        compilerBuildOptions="
+            -I${PROJECT_ROOT}/project/code
+            -I${PROJECT_ROOT}/project/user/inc
+            -I${PROJECT_ROOT}/libraries/sdk/ti_config
+            -I${PROJECT_ROOT}/libraries/zf_common
+            -I${PROJECT_ROOT}/libraries/zf_components
+            -I${PROJECT_ROOT}/libraries/zf_device
+            -I${PROJECT_ROOT}/libraries/zf_driver
+            -I${COM_TI_MSPM0_SDK_INSTALL_DIR}/source/third_party/CMSIS/Core/Include
+            -I${COM_TI_MSPM0_SDK_INSTALL_DIR}/source
+            -D__MSPM0G3507__
+            -D__USE_SYSCONFIG__
+            -O2
+            -g
+            -mcpu=cortex-m0plus
+            -march=thumbv6m
+            -mfloat-abi=soft
+            -mthumb
+            -Wall
+            -Wextra
+            -Wno-unused-parameter
+            -ffunction-sections
+            -fdata-sections
+        "
+        linkerBuildOptions="
+            -l&quot;ti/driverlib/lib/ticlang/m0p/mspm0g1x0x_g3x0x/driverlib.a&quot;
+            -L${PROJECT_ROOT}
+            -L${COM_TI_MSPM0_SDK_INSTALL_DIR}/source
+            -Wl,--rom_model
+            -Wl,--warn_sections
+            -Wl,--unused_section_elimination
+            -L${CG_TOOL_ROOT}/lib
+            -llibc.a
+        "
+        sourceLookupPath="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source/ti/driverlib"
+        description="MSPM0G3507 line following, MaixCAM vision approach, MPU6050 angle hold and line reacquisition controller">
+        <property name="buildProfile" value="release"/>
+        <property name="isHybrid" value="true"/>
+
+        <file path="../code/ball_car.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/ball_car.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/car_app.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/car_app.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/cat_animation.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/line_follow.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/line_follow.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/line_sensor.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/line_sensor.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/angle_pid.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/angle_pid.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/car_menu.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/car_menu.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/mpu6050_yaw.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/mpu6050_yaw.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/odometer.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/odometer.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/speed_pid.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/speed_pid.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/tb6612.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/tb6612.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/vision_protocol.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/vision_protocol.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/vision_uart.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/vision_uart.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+        <file path="../code/wheel_encoder.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/code"></file>
+        <file path="../code/wheel_encoder.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/code"></file>
+
+        <file path="../user/src/isr.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="project/user/src"></file>
+        <file path="../user/src/main.c" openOnCreation="true" excludeFromBuild="false" action="link" targetDirectory="project/user/src"></file>
+        <file path="../user/inc/isr.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="project/user/inc"></file>
+
+        <file path="../../libraries/sdk/ti_config/ti_msp_dl_config.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/sdk/ti_config"></file>
+        <file path="../../libraries/sdk/ti_config/ti_msp_dl_config.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/sdk/ti_config"></file>
+
+        <file path="../../libraries/zf_common/zf_common_clock.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_clock.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_debug.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_debug.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_fifo.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_fifo.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_font.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_font.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_function.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_headfile.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_interrupt.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_interrupt.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+        <file path="../../libraries/zf_common/zf_common_typedef.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_common"></file>
+
+        <file path="../../libraries/zf_components/seekfree_assistant.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_components"></file>
+        <file path="../../libraries/zf_components/seekfree_assistant_interface.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_components"></file>
+
+        <file path="../../libraries/zf_device/zf_device_absolute_encoder.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_config.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_dl1a.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_dl1b.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_gs08ra.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_imu660ra.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_imu660rb.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_imu660rc.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_imu963ra.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_ips114.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_ips200.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_ips200pro.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_key.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_oled.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_tft180.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_tsl1401.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_type.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_type.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_wifi_spi.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_wifi_uart.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+        <file path="../../libraries/zf_device/zf_device_wireless_uart.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_device"></file>
+
+        <file path="../../libraries/zf_driver/zf_driver_adc.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_delay.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_delay.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_encoder.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_exti.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_exti.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_flash.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_gpio.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_gpio.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_pit.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_pit.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_pwm.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_pwm.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_soft_iic.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_soft_iic.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_spi.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_timer.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_timer.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_uart.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="libraries/zf_driver"></file>
+        <file path="../../libraries/zf_driver/zf_driver_uart.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="libraries/zf_driver"></file>
+
+        <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source/ti/devices/msp/m0p/startup_system_files/ticlang/startup_mspm0g350x_ticlang.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="sdk_startup"></file>
+        <file path="./device_linker.cmd" openOnCreation="false" excludeFromBuild="false" action="copy"></file>
+        <file path="./README.md" openOnCreation="false" excludeFromBuild="false" action="copy"></file>
+    </project>
+</projectSpec>

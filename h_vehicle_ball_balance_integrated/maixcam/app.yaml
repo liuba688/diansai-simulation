@@ -1,0 +1,14 @@
+id: h_vehicle_ball_balance
+name: H Vehicle Ball Balance
+name[zh]: H题车载平衡滚球统一程序
+version: 1.0.0
+author: diansai
+desc: Resident vision and UART task dispatcher for 2026 H
+desc[zh]: 2026 H题常驻视觉、图传画面与UART任务切换
+files:
+  - main.py
+  - mission_protocol.py
+  - ball_estimator.py
+  - README.md
+  - pipe_ball_480x96_v1.mud
+  - pipe_ball_480x96_v1.cvimodel
