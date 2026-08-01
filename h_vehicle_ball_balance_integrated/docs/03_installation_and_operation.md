@@ -2,10 +2,10 @@
 
 ## 1. MSPM0 烧录
 
-最新交付文件：`dist/h_vehicle_ball_balance_mspm0g3507_v1.0.3.hex`。
+最新交付文件：`dist/h_vehicle_ball_balance_mspm0g3507_v1.0.17.hex`。
 
 可用 UniFlash/CCS/XDS 烧录 Intel HEX。烧录后先不接 X42S 连杆，复位并确认 OLED 出现
-八项菜单。需要调试符号时使用 `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.3.out`。
+八项菜单。需要调试符号时使用 `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.17.out`。
 
 烧录后的首次动作测试必须拆球并脱开连杆。每次整车与 X42S 共同上电前先人工将水管调平；
 程序只在本次上电初始化时建立一次软件水平零点，Task 3 完成或按 BACK 后返回该零点。
@@ -59,7 +59,7 @@ python3 main.py
 2. UP/DOWN 选择 CONSERVATIVE/NORMAL/FAST/SPRINT。
 3. OK 确认速度并开始 MODE_SELECT 准备；此时不计时、不运动。
 4. OLED 显示 READY 后再按 OK，立即计时并启动。
-5. Task 4 在 150 cm 自动停；Task 2/5 走 RACE LINE 一圈停车。
+5. Task 4 从 110 cm 开始分段减速并在 150 cm 软停；Task 2/5 在 550-600 cm 预减速，第一次重新经过基准线后只向前软停。
 
 Task 6 当前显示保留提示并返回菜单，绝不会启动底盘。
 

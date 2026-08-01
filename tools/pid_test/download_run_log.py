@@ -26,6 +26,13 @@ FIELDS = [
     "line_state",
     "yaw_rate_dps",
     "yaw_rate_target_dps",
+    "odometer_cm",
+    "finish_armed",
+    "finish_strict_wide",
+    "finish_fallback_wide",
+    "finish_braking",
+    "timer_frozen",
+    "finish_line_ticks",
 ]
 
 
@@ -34,14 +41,18 @@ def parse_data(line: str) -> dict[str, int | float] | None:
         "@RUNLOG,DATA,1,",
         "@RUNLOG,DATA,2,",
         "@RUNLOG,DATA,3,",
+        "@RUNLOG,DATA,4,",
     )):
         return None
     parts = line.split(",")
     version = int(parts[2])
-    expected_fields = 16 if version >= 3 else (15 if version >= 2 else 14)
+    expected_fields = (
+        19 if version >= 4 else (16 if version >= 3 else (15 if version >= 2 else 14))
+    )
     if len(parts) != expected_fields:
         raise ValueError(f"bad RUNLOG field count: {len(parts)}")
     values = [int(value) for value in parts[3:]]
+    finish_flags = values[14] if version >= 4 else 0
     return {
         "index": values[0],
         "timestamp_ms": values[1],
@@ -56,12 +67,22 @@ def parse_data(line: str) -> dict[str, int | float] | None:
         "line_state": values[10],
         "yaw_rate_dps": values[11] / 10.0 if version >= 2 else 0.0,
         "yaw_rate_target_dps": values[12] / 10.0 if version >= 3 else 0.0,
+        "odometer_cm": values[13] / 10.0 if version >= 4 else 0.0,
+        "finish_armed": 1 if finish_flags & 0x01 else 0,
+        "finish_strict_wide": 1 if finish_flags & 0x02 else 0,
+        "finish_fallback_wide": 1 if finish_flags & 0x04 else 0,
+        "finish_braking": 1 if finish_flags & 0x08 else 0,
+        "timer_frozen": 1 if finish_flags & 0x10 else 0,
+        "finish_line_ticks": values[15] if version >= 4 else 0,
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", required=True, help="USB-TTL port, e.g. COM9")
+    parser.add_argument(
+        "--port", required=True,
+        help="on-board Type-C/CH340 port, e.g. COM17",
+    )
     parser.add_argument("--baud", type=int, default=115200)
     parser.add_argument("--output-dir", default="output/run_logs")
     parser.add_argument("--timeout", type=float, default=20.0)

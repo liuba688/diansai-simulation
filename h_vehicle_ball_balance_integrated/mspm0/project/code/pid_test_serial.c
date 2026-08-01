@@ -101,6 +101,10 @@ static void pid_test_parse_line(
 
 void pid_test_serial_init(void)
 {
+    uart_init(PID_TEST_UART_INDEX,
+              PID_TEST_UART_BAUDRATE,
+              PID_TEST_UART_TX_PIN,
+              PID_TEST_UART_RX_PIN);
     pid_test_rx_head = 0U;
     pid_test_rx_tail = 0U;
     pid_test_line_length = 0U;

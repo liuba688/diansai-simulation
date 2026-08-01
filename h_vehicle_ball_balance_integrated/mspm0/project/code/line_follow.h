@@ -12,13 +12,35 @@
 #define LINE_FOLLOW_SPEED_RECOVERY_RPM       (2.0f)
 #define LINE_FOLLOW_CURVE_ENTER_STRENGTH     (90)
 #define LINE_FOLLOW_CURVE_EXIT_STRENGTH      (60)
-#define LINE_FOLLOW_CURVE_ENTER_TICKS        (8)
+#define LINE_FOLLOW_CURVE_ENTER_TICKS        (3)
 #define LINE_FOLLOW_CURVE_EXIT_TICKS         (5)
 #define LINE_FOLLOW_CURVE_EXIT_YAW_DEG       (160.0f)
 #define LINE_FOLLOW_CURVE_START_INHIBIT_TICKS (50)
-#define LINE_FOLLOW_ARC_FUSION_ENABLE         (0)
+#define LINE_FOLLOW_ARC_FUSION_ENABLE         (1)
+#define LINE_FOLLOW_ERROR_FILTER_ALPHA         (0.30f)
+#define LINE_FOLLOW_D_FILTER_ALPHA             (0.20f)
+#define LINE_FOLLOW_DERROR_LIMIT               (100.0f)
+#define LINE_FOLLOW_CURVE_TRIGGER_ERROR         (40.0f)
+#define LINE_FOLLOW_CURVE_BLEND_STEP            (0.05f)
+#define LINE_FOLLOW_CURVE_LOADED_BLEND_STEP     (0.10f)
 #define LINE_FOLLOW_CURVE_ABORT_ERROR          (150)
-#define LINE_FOLLOW_CURVE_ABORT_TICKS          (5)
+#define LINE_FOLLOW_CURVE_ABORT_TICKS          (30)
+
+/* Loaded chassis: keep CONSERVATIVE unchanged and stabilize faster tiers. */
+#define LINE_FOLLOW_LOADED_TIER_MIN_RPM         (111.0f)
+#define LINE_FOLLOW_CURVE_EDGE_ERROR            (350.0f)
+#define LINE_FOLLOW_CURVE_EDGE_OUTER_DROP_RPM   (10.0f)
+#define LINE_FOLLOW_CURVE_LOADED_ERROR_KP       (0.18f)
+#define LINE_FOLLOW_CURVE_LOADED_ERROR_KD       (0.05f)
+#define LINE_FOLLOW_CURVE_COUNTER_DIFF_MAX_RPM  (20.0f)
+#define LINE_FOLLOW_CURVE_MIN_FORWARD_RPM        (8.0f)
+#define LINE_FOLLOW_CURVE_REACQUIRE_TICKS       (20U)
+#define LINE_FOLLOW_CURVE_REACQUIRE_OUTER_RPM   (70.0f)
+#define LINE_FOLLOW_CURVE_LOST_MAX_TICKS        (80U)
+#define LINE_FOLLOW_CURVE_LOST_TURN_LEFT_RPM    (60.0f)
+#define LINE_FOLLOW_CURVE_LOST_TURN_RIGHT_RPM   (20.0f)
+#define LINE_FOLLOW_CURVE_LOST_FLAT_LEFT_RPM    (45.0f)
+#define LINE_FOLLOW_CURVE_LOST_FLAT_RIGHT_RPM   (50.0f)
 
 #define LINE_FOLLOW_KP                       (0.20f)
 #define LINE_FOLLOW_KD                       (0.20f)
@@ -63,6 +85,10 @@
 #define TRACK_FULL_LAP_CM                  (2.0f * TRACK_HALF_LAP_CM)
 #define TRACK_PHASE_HYSTERESIS_CM          (5.0f)
 #define TRACK_CURVE_APPROACH_ZONE_CM      (20.0f)
+#define TRACK_PHASE_ADVANCE_CM             (3.0f)
+#define TRACK_CURVE_ODOM_ENTRY_LEAD_CM     (7.0f)
+/* 2026-08-01 log: curve 2 reached mask 0x60 before arc entry; curve 1 stays unchanged. */
+#define TRACK_CURVE_2_EXTRA_ADVANCE_CM     (5.0f)
 
 typedef enum
 {
@@ -114,6 +140,7 @@ typedef struct
     uint8 curve_abort_ticks;
     uint8 curve_enter_ticks;
     uint8 curve_exit_ticks;
+    uint8 curve_reacquire_ticks;
     uint16 run_ticks;
     float curve_start_yaw_deg;
     float curve_yaw_progress_deg;
@@ -121,6 +148,9 @@ typedef struct
     track_phase_enum track_phase;
     float base_rpm;
     float correction_rpm;
+    float filtered_error;
+    float filtered_derivative;
+    float curve_blend;
     float curve_direction;
     line_follow_params_struct params;
 } line_follow_struct;

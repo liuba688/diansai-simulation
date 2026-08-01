@@ -11,7 +11,7 @@
 
 ## 交付入口
 
-- `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.3.hex`：MSPM0 最新烧录文件；Task 3 完成优先，并使用上电零点自动回水平。
+- `dist/h_vehicle_ball_balance_mspm0g3507_v1.0.17.hex`：MSPM0 最新烧录文件；保留 v1.0.16 稳定巡线，在第二半圆525~565 cm按里程平滑预减速至60 RPM，缩短宽线触发后的柔停距离。
 - `dist/maix-h_vehicle_ball_balance-v1.0.0.zip`：MaixVision 安装包。
 - `docs/01_architecture_and_tasks.md`：结构、任务绑定与算法说明。
 - `docs/02_wiring_and_safety.md`：接线和首次上电安全流程。

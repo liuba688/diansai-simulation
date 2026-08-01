@@ -1,7 +1,7 @@
 # 速度闭环 PID 串口测试工具
 
-本工具对应 TI MSPM0G3507 主控 UART3（PB2 TX、PB3 RX），物理上位于载板丝印
-`UART4` 的接口，通过 COM9 USB-TTL 有线连接，使用 115200 baud。HC-05 蓝牙调试已放弃。
+本工具当前对应天猛星核心板板载 Type-C/CH340：MSPM0G3507 UART0
+（PA10 TX、PA11 RX），使用 115200 baud，不需要外接 USB-TTL。HC-05 蓝牙调试已放弃。
 控制环和串口遥测均为 50 Hz。
 工具直接启动一次有上限的速度阶跃测试、采集遥测、保存原始日志
 和 CSV，并生成 JSON 指标。
@@ -29,16 +29,16 @@
 
 巡线时固件不再发送 50 Hz 实时遥测，而是在 RAM 中以 10 Hz 记录最多 60 秒。
 停车时会自动发送一次；如果当时电脑没有监听，日志仍保留到下一次巡线任务开始，
-可重新连接 COM9 后执行：
+可重新连接板载 Type-C 对应的 COM 口后执行（将 `COM17` 替换为设备管理器中的实际端口）：
 
 ```powershell
-.\tools\pid_test\.venv\Scripts\python.exe .\tools\pid_test\download_run_log.py --port COM9
+.\tools\pid_test\.venv\Scripts\python.exe .\tools\pid_test\download_run_log.py --port COM17
 ```
 
 工具发送 `@PIDTEST,DUMP`，把上一圈数据保存到 `output/run_logs/*.csv`。
 新的巡线任务开始时旧日志才会清除。紧急停车路径会先停止电机，再进行串口导出。
-新版CSV还包含 `yaw_rate_dps` 和 `yaw_rate_target_dps`，分别表示IMU实际
-偏航角速度和标准半圆目标角速度幅值。
+v4 CSV除偏航角速度外，还包含 `odometer_cm`、终点解锁、严格/降级宽线判定、
+软刹状态、计时冻结和终点确认计数，用于定位终点触发与停车距离。
 
 ```powershell
 .\tools\pid_test\.venv\Scripts\python.exe .\tools\pid_test\pid_test.py --list

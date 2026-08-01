@@ -103,6 +103,49 @@ class SourceContractTests(unittest.TestCase):
         self.assertIn("zdt_emm_return_home", driver)
         self.assertGreaterEqual(mission.count("zdt_emm_return_home"), 2)
 
+    def test_curve_fusion_and_forward_only_soft_stop_contract(self):
+        code = ROOT / "mspm0/project/code"
+        app = (code / "car_app.c").read_text(encoding="utf-8")
+        follow = (code / "line_follow.c").read_text(encoding="utf-8")
+        follow_header = (code / "line_follow.h").read_text(encoding="utf-8")
+        menu = (code / "car_menu.c").read_text(encoding="utf-8")
+
+        self.assertIn("LINE_FOLLOW_ARC_FUSION_ENABLE         (1)", follow_header)
+        self.assertIn("LINE_FOLLOW_ERROR_FILTER_ALPHA", follow)
+        self.assertIn("LINE_FOLLOW_CURVE_TRIGGER_ERROR", follow)
+        self.assertIn("TRACK_PHASE_ADVANCE_CM", follow)
+        self.assertIn("odometry_entry_ready", follow)
+        self.assertIn("!follow->curve_active && !follow->curve_aborted", follow)
+        self.assertIn(
+            "TRACK_CURVE_ODOM_ENTRY_LEAD_CM     (7.0f)", follow_header
+        )
+        self.assertIn("TRACK_CURVE_2_EXTRA_ADVANCE_CM", follow)
+        self.assertIn(
+            "TRACK_CURVE_2_EXTRA_ADVANCE_CM     (5.0f)", follow_header
+        )
+        self.assertIn("curve_blend", follow)
+        self.assertNotIn("curve_boost", follow)
+        self.assertIn("LINE_FOLLOW_CURVE_LOADED_BLEND_STEP", follow_header)
+        self.assertIn("LINE_FOLLOW_CURVE_REACQUIRE_TICKS", follow_header)
+        self.assertIn("LINE_FOLLOW_CURVE_LOST_TURN_RIGHT_RPM", follow)
+        self.assertIn("LINE_FOLLOW_CURVE_LOST_FLAT_RIGHT_RPM", follow)
+        self.assertIn("LINE_FOLLOW_CURVE_MIN_FORWARD_RPM", app)
+        self.assertIn("0.24f, 12.0f", menu)
+
+        self.assertIn("CAR_FINISH_STOP_RAMP", app)
+        self.assertIn("CAR_FINISH_FALLBACK_DISTANCE_CM", app)
+        self.assertIn("CAR_FINISH_FALLBACK_MIN_SENSORS", app)
+        self.assertIn("@RUNLOG,DATA,4", app)
+        self.assertIn("CAR_LAP_DECEL_START_CM", app)
+        self.assertIn("CAR_LAP_DECEL_START_CM                  (525.0f)", app)
+        self.assertIn("CAR_LAP_DECEL_END_CM                    (565.0f)", app)
+        self.assertIn("line_follow.params.max_curve_rpm", app)
+        self.assertIn("CAR_AB_DECEL_START_CM", app)
+        self.assertIn("car_update_soft_stop", app)
+        self.assertNotIn("CAR_FINISH_REVERSE_RPM", app)
+        self.assertNotIn("CAR_FINISH_BACKUP", app)
+        self.assertNotIn("CAR_FINISH_FORWARD_SEEK", app)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -63,7 +63,8 @@ CW(0)；Mode=0 表示相对上一输入目标，准备时 Mode=2/Pulse=0 锚定�
 | 参数 | 文件 |
 |---|---|
 | 四档速度、循迹 Kp、速度 PID | `mspm0/project/code/car_menu.c` |
-| A-B 150 cm、RACE 550 cm 最低门槛 | `mspm0/project/code/car_app.c` |
+| 红外滤波、入弯阈值、候选区和圆弧渐变 | `mspm0/project/code/line_follow.h` |
+| A-B 110/140/150 cm 减速点、RACE 550/600 cm 减速点和单向软停 | `mspm0/project/code/car_app.c` |
 | Task 3/4/5 控制参数 | `mspm0/project/code/ball_balance.c` |
 | X42S 速度、加速度、周期、限幅 | `mspm0/project/code/zdt_emm_v5.c` |
 | 相机三点标定、滤波、误检阈值 | `maixcam/ball_estimator.py` |

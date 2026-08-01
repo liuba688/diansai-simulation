@@ -23,7 +23,11 @@
 双方 115200 8N1、3.3 V 逻辑。MaixCAM 独立可靠 5 V/Type-C 供电；载板某些串口座带
 12 V，禁止把电源脚接到相机。接线前测出 PA23/PA24 与 GND，只接 TX/RX/GND。
 
-## 3. MSPM0 ↔ X42S
+## 3. Type-C 行驶日志
+
+天猛星核心板板载 Type-C/CH340 固定连接 MSPM0G3507 UART0：PA10 为 TX、PA11 为 RX，115200 8N1。直接使用数据线连接电脑，不接外置 USB-TTL。行驶期间日志写入 RAM，停车后通过 Type-C 导出。
+
+## 4. MSPM0 ↔ X42S
 
 适用实物：ZDT X42S V2.0，Emm 固件分支，TTL UART 接口。
 

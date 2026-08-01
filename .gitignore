@@ -25,6 +25,16 @@ htmlcov/
 venv/
 env/
 dist/
+!h_vehicle_ball_balance_integrated/dist/
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.5.hex
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.5.out
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.5.map
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.6.hex
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.6.out
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.6.map
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.7.hex
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.7.out
+!h_vehicle_ball_balance_integrated/dist/h_vehicle_ball_balance_mspm0g3507_v1.0.7.map
 build/
 *.egg-info/
 

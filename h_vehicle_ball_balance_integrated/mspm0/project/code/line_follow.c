@@ -7,9 +7,9 @@ static float line_follow_limit (float value, float limit)
     return value;
 }
 
-static int16 line_follow_abs_i16 (int16 value)
+static float line_follow_abs_float(float value)
 {
-    return (value < 0) ? (int16)-value : value;
+    return (value < 0.0f) ? -value : value;
 }
 
 static uint8 line_follow_mask_is_contiguous(uint8 mask)
@@ -51,7 +51,8 @@ static track_phase_enum line_follow_detect_phase (float distance_cm,
 
     float s1_end = TRACK_STRAIGHT_LENGTH_CM;           /* 150.0 cm */
     float c1_end = TRACK_HALF_LAP_CM;                  /* 307.1 cm */
-    float s2_end = TRACK_STRAIGHT_LENGTH_CM + TRACK_HALF_LAP_CM; /* 457.1 cm */
+    float s2_end = TRACK_STRAIGHT_LENGTH_CM + TRACK_HALF_LAP_CM
+                 - TRACK_CURVE_2_EXTRA_ADVANCE_CM; /* Curve-2 entry only. */
 
     track_phase_enum raw_phase;
     if(d < s1_end)      { raw_phase = TRACK_PHASE_STRAIGHT_1; }
@@ -111,6 +112,7 @@ void line_follow_init (line_follow_struct *follow)
     follow->curve_abort_ticks = 0U;
     follow->curve_enter_ticks = 0U;
     follow->curve_exit_ticks = 0U;
+    follow->curve_reacquire_ticks = 0U;
     follow->run_ticks = 0U;
     follow->curve_start_yaw_deg = 0.0f;
     follow->curve_yaw_progress_deg = 0.0f;
@@ -124,6 +126,9 @@ void line_follow_init (line_follow_struct *follow)
     follow->params.correction_max_rpm = LINE_FOLLOW_CORRECTION_MAX_RPM;
     follow->base_rpm = follow->params.straight_rpm;
     follow->correction_rpm = 0.0f;
+    follow->filtered_error = 0.0f;
+    follow->filtered_derivative = 0.0f;
+    follow->curve_blend = 0.0f;
     follow->curve_direction = 0.0f;
 }
 
@@ -152,6 +157,10 @@ void line_follow_update (line_follow_struct *follow,
     uint8 right_edge;
     float requested_base_rpm;
     float correction;
+    float raw_derivative;
+    float phase_distance_cm = distance_cm + TRACK_PHASE_ADVANCE_CM;
+    uint8 loaded_curve_tier =
+        (follow->params.straight_rpm >= LINE_FOLLOW_LOADED_TIER_MIN_RPM);
     track_phase_enum new_phase;
 
     if(follow->run_ticks < 65535U) { follow->run_ticks++; }
@@ -161,6 +170,7 @@ void line_follow_update (line_follow_struct *follow,
      * ================================================================ */
     if(!sensor->line_valid)
     {
+        follow->filtered_derivative = 0.0f;
         if(0U == follow->lost_ticks)
         {
             if(follow->loss_events < 65535U)
@@ -169,6 +179,52 @@ void line_follow_update (line_follow_struct *follow,
             }
         }
         if(follow->lost_ticks < 255) { follow->lost_ticks++; }
+
+        /*
+         * The loaded chassis was repeatedly crossing the line during the
+         * generic reverse search.  While an odometry-confirmed arc is still
+         * active, keep every wheel forward and recover with bounded
+         * curvature: turn harder after a positive/right-edge loss, but
+         * nearly straighten after a negative/left-edge loss.  This applies
+         * to NORMAL/FAST/SPRINT only; the verified CONSERVATIVE path remains
+         * on the legacy recovery logic below.
+         */
+        if(loaded_curve_tier
+           && (follow->curve_active || (follow->curve_blend > 0.0f)))
+        {
+            follow->lost_brake_ticks = 0U;
+            if(follow->lost_ticks <= LINE_FOLLOW_CURVE_LOST_MAX_TICKS)
+            {
+                follow->mode =
+                    (follow->lost_ticks <= LINE_FOLLOW_LOST_CONFIRM_TICKS)
+                    ? LINE_FOLLOW_MODE_NORMAL
+                    : LINE_FOLLOW_MODE_LOST_SEARCH;
+                if(follow->last_valid_error >= 0)
+                {
+                    *left_target_rpm =
+                        LINE_FOLLOW_CURVE_LOST_TURN_LEFT_RPM;
+                    *right_target_rpm =
+                        LINE_FOLLOW_CURVE_LOST_TURN_RIGHT_RPM;
+                }
+                else
+                {
+                    *left_target_rpm =
+                        LINE_FOLLOW_CURVE_LOST_FLAT_LEFT_RPM;
+                    *right_target_rpm =
+                        LINE_FOLLOW_CURVE_LOST_FLAT_RIGHT_RPM;
+                }
+                follow->correction_rpm =
+                    *left_target_rpm - *right_target_rpm;
+            }
+            else
+            {
+                follow->mode = LINE_FOLLOW_MODE_LOST_STOP;
+                *left_target_rpm = 0.0f;
+                *right_target_rpm = 0.0f;
+                follow->correction_rpm = 0.0f;
+            }
+            return;
+        }
 
         /*
          * Emergency brake: yaw rate has spiked (spinning out).
@@ -264,6 +320,13 @@ void line_follow_update (line_follow_struct *follow,
     /* ================================================================
      * LINE VISIBLE — reset lost counters, update error tracking
      * ================================================================ */
+    if(loaded_curve_tier
+       && (follow->lost_ticks > LINE_FOLLOW_LOST_CONFIRM_TICKS)
+       && (follow->curve_active || (follow->curve_blend > 0.0f)))
+    {
+        follow->curve_reacquire_ticks =
+            LINE_FOLLOW_CURVE_REACQUIRE_TICKS;
+    }
     follow->lost_ticks = 0;
     follow->lost_brake_ticks = 0;
     follow->last_valid_error = sensor->error;
@@ -292,7 +355,8 @@ void line_follow_update (line_follow_struct *follow,
     }
 
     /* Odometry-based track phase detection. */
-    new_phase = line_follow_detect_phase(distance_cm, follow->track_phase);
+    new_phase = line_follow_detect_phase(phase_distance_cm,
+                                         follow->track_phase);
     follow->track_phase = new_phase;
 
     /* ================================================================
@@ -368,9 +432,19 @@ void line_follow_update (line_follow_struct *follow,
      * BASE SPEED — dynamic reduction based on error magnitude
      * ================================================================ */
     error_delta = sensor->error - follow->previous_error;
-    curve_strength = line_follow_abs_i16(sensor->error)
-                   + (int16)(LINE_FOLLOW_SPEED_DERROR_GAIN
-                             * line_follow_abs_i16(error_delta));
+    follow->filtered_error += LINE_FOLLOW_ERROR_FILTER_ALPHA
+                            * ((float)sensor->error
+                               - follow->filtered_error);
+    raw_derivative = line_follow_limit(
+        (float)error_delta,
+        LINE_FOLLOW_DERROR_LIMIT);
+    follow->filtered_derivative += LINE_FOLLOW_D_FILTER_ALPHA
+                                 * (raw_derivative
+                                    - follow->filtered_derivative);
+    curve_strength = (int16)(
+        line_follow_abs_float(follow->filtered_error)
+        + LINE_FOLLOW_SPEED_DERROR_GAIN
+          * line_follow_abs_float(follow->filtered_derivative));
     requested_base_rpm = follow->params.straight_rpm
                        - LINE_FOLLOW_SPEED_ERROR_GAIN * curve_strength;
 
@@ -392,13 +466,14 @@ void line_follow_update (line_follow_struct *follow,
         }
         else if(TRACK_PHASE_STRAIGHT_2 == follow->track_phase)
         {
-            curve_entry_cm = TRACK_STRAIGHT_LENGTH_CM + TRACK_HALF_LAP_CM;
+            curve_entry_cm = TRACK_STRAIGHT_LENGTH_CM + TRACK_HALF_LAP_CM
+                           - TRACK_CURVE_2_EXTRA_ADVANCE_CM;
             approaching_curve = 1U;
         }
 
         if(approaching_curve)
         {
-            dist_to_curve = curve_entry_cm - distance_cm;
+            dist_to_curve = curve_entry_cm - phase_distance_cm;
             if(dist_to_curve < TRACK_CURVE_APPROACH_ZONE_CM
                && dist_to_curve > 0.0f)
             {
@@ -429,15 +504,50 @@ void line_follow_update (line_follow_struct *follow,
     {
         uint8 in_curve_phase = (TRACK_PHASE_CURVE_1 == follow->track_phase)
                             || (TRACK_PHASE_CURVE_2 == follow->track_phase);
+        uint8 approaching_curve =
+            ((TRACK_PHASE_STRAIGHT_1 == follow->track_phase)
+             && (phase_distance_cm >= (TRACK_STRAIGHT_LENGTH_CM
+                                       - TRACK_CURVE_APPROACH_ZONE_CM)))
+            || ((TRACK_PHASE_STRAIGHT_2 == follow->track_phase)
+                && (phase_distance_cm >= (TRACK_STRAIGHT_LENGTH_CM
+                                          + TRACK_HALF_LAP_CM
+                                          - TRACK_CURVE_2_EXTRA_ADVANCE_CM
+                                          - TRACK_CURVE_APPROACH_ZONE_CM)));
+        uint8 odometry_entry_ready = in_curve_phase
+            || ((TRACK_PHASE_STRAIGHT_1 == follow->track_phase)
+                && (phase_distance_cm >= (TRACK_STRAIGHT_LENGTH_CM
+                                           - TRACK_CURVE_ODOM_ENTRY_LEAD_CM)))
+            || ((TRACK_PHASE_STRAIGHT_2 == follow->track_phase)
+                && (phase_distance_cm >= (TRACK_STRAIGHT_LENGTH_CM
+                                           + TRACK_HALF_LAP_CM
+                                           - TRACK_CURVE_2_EXTRA_ADVANCE_CM
+                                           - TRACK_CURVE_ODOM_ENTRY_LEAD_CM)));
 
-        if(in_curve_phase
+        if((in_curve_phase || approaching_curve)
            && yaw_ready
-           && !follow->curve_aborted
            && (follow->run_ticks >= LINE_FOLLOW_CURVE_START_INHIBIT_TICKS))
         {
-            if(!follow->curve_active)
+            if(!follow->curve_active
+               && !follow->curve_aborted
+               && (odometry_entry_ready
+                   || (follow->filtered_error
+                       >= LINE_FOLLOW_CURVE_TRIGGER_ERROR)))
             {
-                /* Enter curve: latch yaw origin and fixed right-turn direction. */
+                if(follow->curve_enter_ticks < 255U)
+                {
+                    follow->curve_enter_ticks++;
+                }
+            }
+            else if(!follow->curve_active && !follow->curve_aborted)
+            {
+                follow->curve_enter_ticks = 0U;
+            }
+
+            if(!follow->curve_active
+               && !follow->curve_aborted
+               && (follow->curve_enter_ticks
+                   >= LINE_FOLLOW_CURVE_ENTER_TICKS))
+            {
                 follow->curve_active = 1U;
                 follow->curve_direction = LINE_FOLLOW_TRACK_TURN_DIRECTION;
                 follow->curve_start_yaw_deg = yaw_total_deg;
@@ -462,8 +572,10 @@ void line_follow_update (line_follow_struct *follow,
              * Release fixed curvature for the rest of this phase so normal
              * line following can recover instead of forcing the car onward.
              */
-            if((follow->curve_direction * (float)sensor->error)
+            if((0U == follow->curve_reacquire_ticks)
+               && ((follow->curve_direction * (float)sensor->error)
                <= -(float)LINE_FOLLOW_CURVE_ABORT_ERROR)
+               )
             {
                 if(follow->curve_abort_ticks < 255U)
                 {
@@ -473,7 +585,6 @@ void line_follow_update (line_follow_struct *follow,
                 {
                     follow->curve_active = 0U;
                     follow->curve_aborted = 1U;
-                    follow->curve_direction = 0.0f;
                     follow->curve_exit_ticks = 0U;
                 }
             }
@@ -496,7 +607,8 @@ void line_follow_update (line_follow_struct *follow,
                    >= LINE_FOLLOW_CURVE_EXIT_TICKS)
                 {
                     follow->curve_active = 0U;
-                    follow->curve_direction = 0.0f;
+                    /* One arc feedforward activation per physical curve. */
+                    follow->curve_aborted = 1U;
                     follow->curve_enter_ticks = 0U;
                     follow->curve_exit_ticks = 0U;
                 }
@@ -512,12 +624,12 @@ void line_follow_update (line_follow_struct *follow,
             if(follow->curve_active)
             {
                 follow->curve_active = 0U;
-                follow->curve_direction = 0.0f;
             }
             follow->curve_aborted = 0U;
             follow->curve_abort_ticks = 0U;
             follow->curve_enter_ticks = 0U;
             follow->curve_exit_ticks = 0U;
+            follow->curve_reacquire_ticks = 0U;
         }
     }
     /* When fusion is disabled, preserve the legacy error-based cap as a safety net. */
@@ -554,37 +666,157 @@ void line_follow_update (line_follow_struct *follow,
     }
 
     /* PD correction. */
-    correction = follow->params.kp * sensor->error
-               + follow->params.kd * error_delta;
+    correction = follow->params.kp * follow->filtered_error
+               + follow->params.kd * follow->filtered_derivative;
+    if(follow->curve_active)
+    {
+        follow->curve_blend += loaded_curve_tier
+            ? LINE_FOLLOW_CURVE_LOADED_BLEND_STEP
+            : LINE_FOLLOW_CURVE_BLEND_STEP;
+        if(follow->curve_blend > 1.0f)
+        {
+            follow->curve_blend = 1.0f;
+        }
+    }
+    else
+    {
+        follow->curve_blend -= LINE_FOLLOW_CURVE_BLEND_STEP;
+        if(follow->curve_blend < 0.0f)
+        {
+            follow->curve_blend = 0.0f;
+            follow->curve_direction = 0.0f;
+        }
+    }
     correction = line_follow_limit(correction,
                                     follow->params.correction_max_rpm);
 
     /* ================================================================
      * CURVE FEEDFORWARD + FEEDBACK (when arc fusion is active)
      * ================================================================ */
-    if(follow->curve_active)
+    if(follow->curve_blend > 0.0f)
     {
         float curve_feedback;
         float turn_half_diff;
+        float curve_center_rpm;
+        float normal_left_rpm;
+        float normal_right_rpm;
+        float curve_left_rpm;
+        float curve_right_rpm;
 
-        follow->base_rpm = LINE_FOLLOW_CURVE_CENTER_RPM;
-        curve_feedback =
-            LINE_FOLLOW_CURVE_FEEDBACK_KP * sensor->error
-            + LINE_FOLLOW_CURVE_FEEDBACK_KD * error_delta;
-        curve_feedback = line_follow_limit(
-            curve_feedback,
-            LINE_FOLLOW_CURVE_FEEDBACK_MAX_RPM);
-        turn_half_diff =
-            follow->curve_direction
-                * LINE_FOLLOW_CURVE_HALF_DIFF_RPM
-            + curve_feedback;
-        *left_target_rpm = follow->base_rpm + turn_half_diff;
-        *right_target_rpm = follow->base_rpm - turn_half_diff;
+        if(correction >= 0.0f)
+        {
+            normal_left_rpm = follow->base_rpm;
+            normal_right_rpm = follow->base_rpm - correction;
+        }
+        else
+        {
+            normal_left_rpm = follow->base_rpm + correction;
+            normal_right_rpm = follow->base_rpm;
+        }
+
+        if(loaded_curve_tier)
+        {
+            float edge_ratio =
+                line_follow_abs_float((float)sensor->error)
+                / LINE_FOLLOW_CURVE_EDGE_ERROR;
+            float edge_outer_rpm =
+                follow->params.min_curve_rpm
+                - LINE_FOLLOW_CURVE_EDGE_OUTER_DROP_RPM;
+            float curve_outer_rpm;
+            float turn_diff;
+            float max_forward_diff;
+
+            if(edge_ratio > 1.0f) { edge_ratio = 1.0f; }
+            if(edge_outer_rpm < LINE_FOLLOW_CURVE_REACQUIRE_OUTER_RPM)
+            {
+                edge_outer_rpm = LINE_FOLLOW_CURVE_REACQUIRE_OUTER_RPM;
+            }
+            curve_outer_rpm = follow->params.max_curve_rpm
+                + edge_ratio
+                  * (edge_outer_rpm - follow->params.max_curve_rpm);
+            if((follow->curve_reacquire_ticks > 0U)
+               && (curve_outer_rpm
+                   > LINE_FOLLOW_CURVE_REACQUIRE_OUTER_RPM))
+            {
+                curve_outer_rpm =
+                    LINE_FOLLOW_CURVE_REACQUIRE_OUTER_RPM;
+            }
+
+            /*
+             * Keep the geometric right-turn bias, then add a bounded raw
+             * infrared correction.  Positive error can slow the inner
+             * wheel close to zero; negative error is limited to a gentle
+             * counter-steer so the loaded chassis cannot ping-pong across
+             * the line after reacquisition.
+             */
+            turn_diff =
+                follow->curve_direction
+                * curve_outer_rpm
+                * LINE_FOLLOW_TRACK_WIDTH_MM
+                / (LINE_FOLLOW_CURVE_RADIUS_MM
+                   + 0.5f * LINE_FOLLOW_TRACK_WIDTH_MM)
+                + LINE_FOLLOW_CURVE_LOADED_ERROR_KP
+                  * (float)sensor->error
+                + LINE_FOLLOW_CURVE_LOADED_ERROR_KD
+                  * follow->filtered_derivative;
+            max_forward_diff =
+                curve_outer_rpm - LINE_FOLLOW_CURVE_MIN_FORWARD_RPM;
+            if(turn_diff > max_forward_diff)
+            {
+                turn_diff = max_forward_diff;
+            }
+            if(turn_diff < -LINE_FOLLOW_CURVE_COUNTER_DIFF_MAX_RPM)
+            {
+                turn_diff = -LINE_FOLLOW_CURVE_COUNTER_DIFF_MAX_RPM;
+            }
+
+            if(turn_diff >= 0.0f)
+            {
+                curve_left_rpm = curve_outer_rpm;
+                curve_right_rpm = curve_outer_rpm - turn_diff;
+            }
+            else
+            {
+                curve_left_rpm = curve_outer_rpm + turn_diff;
+                curve_right_rpm = curve_outer_rpm;
+            }
+            turn_half_diff = 0.5f * turn_diff;
+        }
+        else
+        {
+            curve_center_rpm =
+                0.5f * (follow->params.max_curve_rpm
+                        + follow->params.min_curve_rpm);
+            curve_feedback =
+                LINE_FOLLOW_CURVE_FEEDBACK_KP * follow->filtered_error
+                + LINE_FOLLOW_CURVE_FEEDBACK_KD
+                  * follow->filtered_derivative;
+            curve_feedback = line_follow_limit(
+                curve_feedback,
+                LINE_FOLLOW_CURVE_FEEDBACK_MAX_RPM);
+            turn_half_diff =
+                follow->curve_direction
+                    * curve_center_rpm
+                    * LINE_FOLLOW_TRACK_WIDTH_MM
+                    / (2.0f * LINE_FOLLOW_CURVE_RADIUS_MM)
+                + curve_feedback;
+            curve_left_rpm = curve_center_rpm + turn_half_diff;
+            curve_right_rpm = curve_center_rpm - turn_half_diff;
+        }
+        *left_target_rpm = normal_left_rpm
+                         + follow->curve_blend
+                           * (curve_left_rpm - normal_left_rpm);
+        *right_target_rpm = normal_right_rpm
+                          + follow->curve_blend
+                            * (curve_right_rpm - normal_right_rpm);
         follow->previous_error = sensor->error;
         follow->correction_rpm = 2.0f * turn_half_diff;
+        if(follow->curve_reacquire_ticks > 0U)
+        {
+            follow->curve_reacquire_ticks--;
+        }
         return;
     }
-    follow->curve_direction = 0.0f;
 
     /*
      * Standard PD output: never accelerate the outside wheel above the

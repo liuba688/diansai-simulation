@@ -5,12 +5,12 @@
 #include "zf_driver_uart.h"
 
 /*
- * Dedicated PC PID-test port:
- * MCU UART3 on PB2/PB3, exposed as carrier-board connector "UART4".
+ * On-board Type-C / CH340 debug port on the LCKFB TMX core board.
+ * The CH340 is wired to MCU UART0 on PA10/PA11.
  */
-#define PID_TEST_UART_INDEX         (UART_3)
-#define PID_TEST_UART_TX_PIN        (UART3_TX_B2)
-#define PID_TEST_UART_RX_PIN        (UART3_RX_B3)
+#define PID_TEST_UART_INDEX         (UART_0)
+#define PID_TEST_UART_TX_PIN        (UART0_TX_A10)
+#define PID_TEST_UART_RX_PIN        (UART0_RX_A11)
 #define PID_TEST_UART_BAUDRATE      (115200U)
 #define PID_TEST_TELEMETRY_DIVIDER  (1U)   /* 50 Hz control -> 50 Hz telemetry */
 
